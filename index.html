@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stacklands</title>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { width: 100%; height: 100%; overflow: hidden; }
+    body { background: #5a9040; }
+    @keyframes toastIn {
+      0%   { opacity: 0; transform: translateY(10px) scale(0.95); }
+      12%  { opacity: 1; transform: translateY(0) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-8px); }
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #c8a86b; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <h2 style="color: white; padding: 20px; font-family: 'Nunito', sans-serif;">
+      Trwa ładowanie zasobów gry (YAML, CSV, JSON)...
+    </h2>
+  </div>
+
+  <script type="text/babel" src="stacklands.jsx"></script>
+</body>
+</html>

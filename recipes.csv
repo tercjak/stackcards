@@ -1,0 +1,15 @@
+input_a,input_b,output_a,output_b,time_seconds,label_pl,requires_building,notes
+villager,berry_bush,berry,villager,5,Zbieranie jagód,,Villager zbiera jagody i zostaje
+villager,tree,wood,villager,10,Ścinanie drzewa,,Villager ścina drzewo i zostaje
+villager,rock,stone,villager,12,Wydobycie kamienia,,Villager wydobywa kamień i zostaje
+wood,stone,campfire,,8,Budowa ogniska,,Łączenie materiałów (brak b)
+wood,wood,stick,,3,Struganie kija,,
+wood,wood,house,,20,Budowa domu,,
+wood,stone,farm,,15,Budowa farmy,,
+villager,campfire,gold,villager,10,Handel przy ognisku,,
+villager,iron_ore,iron,villager,14,Wytop żelaza,campfire,Wymaga ogniska
+iron,wood,sword,,8,Kucie miecza,campfire,
+villager,wolf,gold,villager,7,Polowanie na wilka,,Villager musi mieć miecz (logika w kodzie)
+farm,villager,carrot,villager,15,Uprawa marchewki,,
+tree,villager,apple,villager,12,Zbiór jabłek,,
+gold,gold,gold,,1,Sumowanie złota,,

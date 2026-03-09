@@ -1,0 +1,120 @@
+[
+  {
+    "id": "punch_a_tree",
+    "title": "Punch a Tree",
+    "title_pl": "Ściągnij drzewo",
+    "description": "Wyślij wieśniaka, by ściął pierwsze drzewo.",
+    "requirements": {
+      "wood": 1
+    },
+    "rewards": {
+      "gold": 0
+    },
+    "unlock_pack": null,
+    "is_main_quest": false,
+    "order": 1
+  },
+  {
+    "id": "carve_stick_from_wood",
+    "title": "Carve a Stick from Wood",
+    "title_pl": "Wystrugaj kij z drewna",
+    "description": "Połącz dwa kawałki drewna, by zrobić kij.",
+    "requirements": {
+      "stick": 1
+    },
+    "rewards": {
+      "gold": 5
+    },
+    "unlock_pack": null,
+    "is_main_quest": false,
+    "order": 2
+  },
+  {
+    "id": "grow_a_berry_bush",
+    "title": "Grow a Berry Bush",
+    "title_pl": "Zbierz jagody",
+    "description": "Zbierz jagody z krzaka za pomocą wieśniaka.",
+    "requirements": {
+      "berry": 3
+    },
+    "rewards": {
+      "gold": 10
+    },
+    "unlock_pack": null,
+    "is_main_quest": false,
+    "order": 3
+  },
+  {
+    "id": "build_a_house",
+    "title": "Build a House",
+    "title_pl": "Zbuduj dom",
+    "description": "Połącz dwa kawałki drewna, by wznieść dom.",
+    "requirements": {
+      "house": 1
+    },
+    "rewards": {
+      "gold": 15,
+      "unlock_pack": "seeking_wisdom"
+    },
+    "unlock_pack": "seeking_wisdom",
+    "is_main_quest": false,
+    "order": 4
+  },
+  {
+    "id": "get_a_second_villager",
+    "title": "Get a Second Villager",
+    "title_pl": "Zdobądź drugiego wieśniaka",
+    "description": "Miej co najmniej 2 wieśniaków w tym samym czasie.",
+    "requirements": {
+      "villager_count": 2
+    },
+    "condition": {
+      "type": "card_count_on_board",
+      "card_id": "villager",
+      "count": 2
+    },
+    "rewards": {
+      "gold": 10
+    },
+    "unlock_pack": null,
+    "is_main_quest": false,
+    "order": 5
+  },
+  {
+    "id": "create_offspring",
+    "title": "Create Offspring",
+    "title_pl": "Stwórz potomstwo",
+    "description": "Umieść dwóch wieśniaków obok siebie przy domu.",
+    "requirements": {
+      "villager_count": 3
+    },
+    "condition": {
+      "type": "proximity",
+      "target_a": "villager",
+      "target_b": "house",
+      "count": 1
+    },
+    "rewards": {
+      "gold": 20,
+      "unlock_pack": "fertile_lands"
+    },
+    "unlock_pack": "fertile_lands",
+    "is_main_quest": false,
+    "order": 6
+  },
+  {
+    "id": "main_quest_1",
+    "title": "Main Quest",
+    "title_pl": "Główny Quest",
+    "description": "Ukończ 3 więcej questów, by odblokować nowy pakiet!",
+    "requirements": {
+      "completed_quests": 3
+    },
+    "rewards": {
+      "gold": 30,
+      "unlock_pack": "seeking_wisdom"
+    },
+    "is_main_quest": true,
+    "order": 0
+  }
+]
