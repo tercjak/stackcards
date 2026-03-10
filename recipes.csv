@@ -1,15 +1,11 @@
 input_a,input_b,output_a,output_b,time_seconds,label_pl,requires_building,notes
-villager,berry_bush,berry,villager,5,Zbieranie jagód,,Villager zbiera jagody i zostaje
-villager,tree,wood,villager,10,Ścinanie drzewa,,Villager ścina drzewo i zostaje
-villager,rock,stone,villager,12,Wydobycie kamienia,,Villager wydobywa kamień i zostaje
-wood,stone,campfire,,8,Budowa ogniska,,Łączenie materiałów (brak b)
-wood,wood,stick,,3,Struganie kija,,
-wood,wood,house,,20,Budowa domu,,
-wood,stone,farm,,15,Budowa farmy,,
-villager,campfire,gold,villager,10,Handel przy ognisku,,
-villager,iron_ore,iron,villager,14,Wytop żelaza,campfire,Wymaga ogniska
-iron,wood,sword,,8,Kucie miecza,campfire,
-villager,wolf,gold,villager,7,Polowanie na wilka,,Villager musi mieć miecz (logika w kodzie)
-farm,villager,carrot,villager,15,Uprawa marchewki,,
-tree,villager,apple,villager,12,Zbiór jabłek,,
-gold,gold,gold,,1,Sumowanie złota,,
+outer_disciple,spirit_herb,spirit_essence,outer_disciple,8,Zbieranie duchowego zioła,,Uczeń zbiera esencję qi
+outer_disciple,qi_stone,spirit_essence,outer_disciple,10,Ekstrakcja Qi,,Uczeń wydobywa energię z kamienia
+spirit_herb,spirit_herb,spirit_pill,,12,Alchemia pigułki,alchemy_cauldron,Rafinacja ziół
+spirit_essence,spirit_herb,spirit_pill,,10,Tworzenie pigułki,alchemy_cauldron,
+iron,spirit_essence,spirit_sword,,14,Wytworzenie duchowego miecza,sect_hall,
+wood,stone,sect_hall,,25,Budowa sali sekty,,
+stone,iron,alchemy_cauldron,,18,Budowa kotła alchemicznego,,
+outer_disciple,cultivation_manual,outer_disciple,,20,Trening kultywacji,sect_hall,Zwiększa poziom w przyszłości
+outer_disciple,demon_beast,spirit_essence,outer_disciple,9,Polowanie na demoniczną bestię,,Zdobycie esencji
+spirit_pill,outer_disciple,spirit_essence,outer_disciple,5,Medytacja z pigułką,,Przyspieszona kultywacja

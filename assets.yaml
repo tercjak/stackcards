@@ -1,195 +1,94 @@
-cards:
-  - id: "villager"
-    name: "Villager"
-    name_pl: "Wieśniak"
+  - id: "outer_disciple"
+    name: "Outer Disciple"
+    name_pl: "Zewnętrzny Uczeń"
     type: "unit"
-    description: "Basic resource-gathering unit."
-    llm_prompt: "Minimalist 2D game card icon of a smiling medieval villager peasant, simple line art, cream/beige card background, flat vector style, no shadow, centered figure, Stacklands game art style"
-    texture: "assets/villager.png"
-    hp: 10
-    tags: ["worker"]
+    description: "A beginner cultivator from a martial sect."
+    llm_prompt: "Minimalist 2D game card icon of a young wuxia martial sect disciple in simple robes, sword on back, flat vector line art, white background, Stacklands style"
+    texture: "assets/outer_disciple.png"
+    hp: 12
+    tags: ["cultivator", "worker"]
 
-  - id: "berry_bush"
-    name: "Berry Bush"
-    name_pl: "Krzak jagód"
+  - id: "spirit_herb"
+    name: "Spirit Herb"
+    name_pl: "Duchowe Zioło"
     type: "resource"
-    description: "A bush that produces berries when a villager tends to it."
-    llm_prompt: "Minimalist 2D game card icon of a round berry bush with small red berries, simple line art, flat vector, transparent background , centered, Stacklands art style"
-    texture: "assets/berry_bush.png"
-    tags: ["gatherable", "nature"]
+    description: "A herb infused with spiritual energy."
+    llm_prompt: "Minimalist 2D game card icon of a glowing mystical herb plant with small blue aura, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_herb.png"
+    tags: ["gatherable", "spiritual"]
 
-  - id: "tree"
-    name: "Tree"
-    name_pl: "Drzewo"
+  - id: "qi_stone"
+    name: "Qi Stone"
+    name_pl: "Kamień Qi"
     type: "resource"
-    description: "A tall tree. Chop it for wood."
-    llm_prompt: "Minimalist 2D game card icon of a simple oak tree, flat vector line art, transparent background, Stacklands game style"
-    texture: "assets/tree.png"
-    tags: ["gatherable", "nature"]
+    description: "A rock filled with condensed spiritual energy."
+    llm_prompt: "Minimalist 2D game card icon of a glowing jade-like spirit stone with light aura, flat vector line art, white background, Stacklands style"
+    texture: "assets/qi_stone.png"
+    tags: ["gatherable", "spiritual"]
 
-  - id: "rock"
-    name: "Rock"
-    name_pl: "Skała"
-    type: "resource"
-    description: "Ciężki głaz. Wydobądź z niego kamień."
-    llm_prompt: "Minimalist 2D game card icon of a dark grey jagged boulder, sharp edges, flat vector line art, white background, Stacklands game style, shadowless, 3:4 ratio"
-    texture: "assets/rock.png"
-    tags: ["gatherable", "nature"]
-
-  - id: "stone"
-    name: "Stone"
-    name_pl: "Kamień"
+  - id: "spirit_essence"
+    name: "Spirit Essence"
+    name_pl: "Esencja Qi"
     type: "material"
-    description: "Gładki kamień. Używany do narzędzi i budowy."
-    llm_prompt: "Minimalist 2D game card icon of a small smooth grey stone, flat vector, white background, Stacklands style, shadowless, 3:4 ratio"
-    texture: "assets/stone.png"
-    tags: ["material", "buildable"]
+    description: "Condensed spiritual energy used for cultivation."
+    llm_prompt: "Minimalist 2D game card icon of a floating glowing orb of spiritual energy, soft aura, flat vector style, white background, Stacklands style"
+    texture: "assets/spirit_essence.png"
+    tags: ["material", "spiritual"]
 
-  - id: "berry"
-    name: "Berry"
-    name_pl: "Jagody"
-    type: "food"
-    description: "Tasty berries. Feed to villagers for health."
-    llm_prompt: "Minimalist 2D game card icon of a small cluster of red berries, flat vector, transparent background , Stacklands style"
-    texture: "assets/berry.png"
-    value: 1
-    tags: ["food", "consumable"]
+  - id: "cultivation_manual"
+    name: "Cultivation Manual"
+    name_pl: "Podręcznik Kultywacji"
+    type: "knowledge"
+    description: "A martial manual describing cultivation techniques."
+    llm_prompt: "Minimalist 2D game card icon of an ancient martial arts scroll with red seal, flat vector line art, white background, Stacklands style"
+    texture: "assets/cultivation_manual.png"
+    tags: ["knowledge"]
 
-  - id: "wood"
-    name: "Wood"
-    name_pl: "Drewno"
-    type: "material"
-    description: "Chopped wood. Used for building."
-    llm_prompt: "Minimalist 2D game card icon of two crossed wooden logs, flat vector line art, transparent background , Stacklands game style"
-    texture: "assets/wood.png"
-    tags: ["material", "buildable"]
+  - id: "spirit_pill"
+    name: "Spirit Pill"
+    name_pl: "Pigułka Qi"
+    type: "consumable"
+    description: "A pill that accelerates cultivation."
+    llm_prompt: "Minimalist 2D game card icon of a glowing alchemy pill in small jade container, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_pill.png"
+    value: 5
+    tags: ["alchemy", "consumable"]
 
-  - id: "stick"
-    name: "Stick"
-    name_pl: "Kij"
-    type: "material"
-    description: "A simple stick carved from wood."
-    llm_prompt: "Minimalist 2D game card icon of a simple wooden stick, flat vector, transparent background , Stacklands style"
-    texture: "assets/stick.png"
-    tags: ["material"]
-
-  - id: "campfire"
-    name: "Campfire"
-    name_pl: "Ognisko"
-    type: "building"
-    description: "Keeps villagers warm. Unlocks cooked food."
-    llm_prompt: "Minimalist 2D game card icon of a campfire with orange flames, flat vector line art, transparent background , Stacklands game style"
-    texture: "assets/campfire.png"
-    tags: ["building", "warmth"]
-
-  - id: "house"
-    name: "House"
-    name_pl: "Dom"
-    type: "building"
-    description: "A small house. Generates a new villager over time."
-    llm_prompt: "Minimalist 2D game card icon of a small cozy house with thatched roof, flat vector, transparent background , Stacklands style"
-    texture: "assets/house.png"
-    tags: ["building", "housing"]
-
-  - id: "farm"
-    name: "Farm"
-    name_pl: "Farma"
-    type: "building"
-    description: "Produces food passively."
-    llm_prompt: "Minimalist 2D game card icon of a small farm plot with crops growing, flat vector, transparent background , Stacklands style"
-    texture: "assets/farm.png"
-    tags: ["building", "food_production"]
-
-  - id: "gold"
-    name: "Gold"
-    name_pl: "Złoto"
-    type: "currency"
-    description: "The main currency. Spend it in the shop."
-    llm_prompt: "Minimalist 2D game card icon of a shiny gold coin with star symbol, flat vector, transparent background , Stacklands style"
-    texture: "assets/gold.png"
-    tags: ["currency"]
-
-  - id: "iron_ore"
-    name: "Iron Ore"
-    name_pl: "Ruda żelaza"
-    type: "material"
-    description: "Raw iron ore. Smelt it into iron."
-    llm_prompt: "Minimalist 2D game card icon of brown rock with orange iron ore veins, flat vector, transparent background , Stacklands style"
-    texture: "assets/iron_ore.png"
-    tags: ["material", "ore"]
-
-  - id: "iron"
-    name: "Iron"
-    name_pl: "Żelazo"
-    type: "material"
-    description: "Smelted iron bar. Used for tools and weapons."
-    llm_prompt: "Minimalist 2D game card icon of a shiny grey iron ingot bar, flat vector, transparent background , Stacklands style"
-    texture: "assets/iron.png"
-    tags: ["material", "metal"]
-
-  - id: "sword"
-    name: "Sword"
-    name_pl: "Miecz"
+  - id: "spirit_sword"
+    name: "Spirit Sword"
+    name_pl: "Duchowy Miecz"
     type: "weapon"
-    description: "A sharp iron sword. Villagers use it to fight monsters."
-    llm_prompt: "Minimalist 2D game card icon of a simple medieval sword pointing up, flat vector line art, transparent background , Stacklands style"
-    texture: "assets/sword.png"
-    attack: 5
-    tags: ["weapon", "combat"]
+    description: "A sword infused with spiritual power."
+    llm_prompt: "Minimalist 2D game card icon of a glowing wuxia spirit sword floating slightly, light aura, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_sword.png"
+    attack: 7
+    tags: ["weapon", "spiritual"]
 
-  - id: "wolf"
-    name: "Wolf"
-    name_pl: "Wilk"
+  - id: "sect_hall"
+    name: "Sect Hall"
+    name_pl: "Sala Sekty"
+    type: "building"
+    description: "The center of a martial sect."
+    llm_prompt: "Minimalist 2D game card icon of a traditional chinese martial sect hall building with curved roof, flat vector line art, white background, Stacklands style"
+    texture: "assets/sect_hall.png"
+    tags: ["building", "sect"]
+
+  - id: "alchemy_cauldron"
+    name: "Alchemy Cauldron"
+    name_pl: "Kocioł Alchemiczny"
+    type: "building"
+    description: "Used to refine pills and elixirs."
+    llm_prompt: "Minimalist 2D game card icon of a chinese alchemy cauldron with faint spiritual smoke, flat vector line art, white background, Stacklands style"
+    texture: "assets/alchemy_cauldron.png"
+    tags: ["building", "alchemy"]
+
+  - id: "demon_beast"
+    name: "Demon Beast"
+    name_pl: "Demoniczna Bestia"
     type: "enemy"
-    description: "A dangerous wolf. Needs an armed villager to defeat."
-    llm_prompt: "Minimalist 2D game card icon of a menacing grey wolf, flat vector, dark card background, Stacklands style enemy card"
-    texture: "assets/wolf.png"
-    hp: 8
-    attack: 3
-    tags: ["enemy", "monster"]
-
-  - id: "carrot"
-    name: "Carrot"
-    name_pl: "Marchewka"
-    type: "food"
-    description: "The crunchiest vegetable."
-    llm_prompt: "Minimalist 2D game card icon of an orange carrot with green top, flat vector, transparent background , Stacklands style"
-    texture: "assets/carrot.png"
-    value: 2
-    tags: ["food", "vegetable"]
-
-  - id: "apple"
-    name: "Apple"
-    name_pl: "Jabłko"
-    type: "food"
-    description: "A fresh red apple. Restores health."
-    llm_prompt: "Minimalist 2D game card icon of a red apple with leaf, flat vector, transparent background , Stacklands style"
-    texture: "assets/apple.png"
-    value: 3
-    tags: ["food", "fruit"]
-
-# Pack definitions (for shop)
-packs:
-  - id: "humble_beginnings"
-    name: "Humble Beginnings"
-    name_pl: "Skromne Początki"
-    cost: 30
-    cards_pool: ["villager", "berry_bush", "tree", "rock", "berry", "wood", "stone"]
-    cards_count: 3
-    always_include: ["villager"]
-
-  - id: "seeking_wisdom"
-    name: "Seeking Wisdom"
-    name_pl: "Szukanie Mądrości"
-    cost: 40
-    cards_pool: ["iron_ore", "wolf", "campfire", "farm", "carrot", "apple"]
-    cards_count: 3
-    unlock_after_quests: 3
-
-  - id: "fertile_lands"
-    name: "Fertile Lands"
-    name_pl: "Żyzne Ziemie"
-    cost: 50
-    cards_pool: ["farm", "carrot", "apple", "berry_bush", "house"]
-    cards_count: 3
-    unlock_after_quests: 5
+    description: "A corrupted spirit beast."
+    llm_prompt: "Minimalist 2D game card icon of a fierce mystical demon beast with glowing eyes, flat vector style, white background, Stacklands style"
+    texture: "assets/demon_beast.png"
+    hp: 16
+    attack: 5
+    tags: ["enemy", "spirit_beast"]

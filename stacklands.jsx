@@ -62,7 +62,7 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
       }}>
         <div style={{ height: 6, background: `linear-gradient(90deg, ${typeColor}, ${typeColor}aa)`, flexShrink: 0 }} />
         <div style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: typeColor, letterSpacing: "0.1em", marginTop: 4, textTransform: "uppercase", opacity: 0.85 }}>{def.type}</div>
-        
+
         {/* Obszar ładowania grafiki */}
         <div style={{
           flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
@@ -132,13 +132,15 @@ function RecipeBook() {
 // ─── GŁÓWNA GRA ──────────────────────────────────────────────────────────────
 function Stacklands() {
   const [cards, setCards] = useState(() => [
-    mkCard("villager", 100, 110),
+    mkCard("outer_disciple", 100, 110),
 
-    mkCard("villager", 280, 110),
-    mkCard("berry_bush", 460, 110),
-    mkCard("tree", 640, 100),
-    mkCard("rock", 820, 120),
-    mkCard("wolf", 120, 110),
+    mkCard("outer_disciple", 280, 110),
+    mkCard("spirit_herb", 460, 110),
+    mkCard("cultivation_manual", 640, 100),
+    mkCard("alchemy_cauldron", 820, 120),
+    mkCard("sect_hall", 920, 120),
+
+    mkCard("demon_beast", 120, 110),
 
   ]);
   const [inventory, setInventory] = useState({});
