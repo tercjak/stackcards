@@ -1,4 +1,6 @@
 // UWAGA: Nie używamy 'import ... from "react"', bo to psuje kompilację w przeglądarce!
+console.log("Skrypt startuje!");
+
 const { useState, useEffect, useRef, useCallback } = window.React;
 
 // ─── ZMIENNE GLOBALNE NA DANE Z PLIKÓW ───────────────────────────────────────
@@ -13,8 +15,8 @@ const TYPE_COLORS = {
   weapon: "#7f8c8d", enemy: "#922b21",
 };
 
-const CARD_W = 350/2; 
-const CARD_H = 460/2;
+const CARD_W = 350 / 2;
+const CARD_H = 460 / 2;
 
 
 let _uid = 1;
@@ -27,7 +29,14 @@ function findRecipe(a, b) {
 // ─── KARTA (COMPONET) ────────────────────────────────────────────────────────
 function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
   const def = CARD_DEFS[card.id];
-  if (!def) return null;
+  // Jeśli brak definicji, pokaż kartę błędu zamiast zwracać null
+  if (!def) {
+    return (
+      <div className="absolute border-2 border-red-500 bg-white" style={{ left: card.x, top: card.y, width: CARD_W, height: CARD_H }}>
+        Brak ID: {card.id}
+      </div>
+    );
+  }
 
   const typeColor = TYPE_COLORS[def.type] || "#888";
   const isEnemy = def.type === "enemy";
@@ -201,12 +210,12 @@ function Stacklands() {
         if (pct >= 1) done.push(craft);
       }
       setCraftMap(newMap);
-done.forEach(craft => {
+      done.forEach(craft => {
         delete craftsRef.current[craft.key];
         setCards(prev => {
           const ca = prev.find(c => c.uid === craft.uidA);
           const cb = prev.find(c => c.uid === craft.uidB);
-          
+
           if (!ca || !cb) return prev;
 
           const newCards = [];
@@ -371,40 +380,49 @@ function GameWrapper() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+
+    // Removed undefined assets loop; CARD_DEFS will be populated from assets.yaml parsing below
+    console.log("Załadowane definicje kart:", Object.keys(CARD_DEFS)); // To pokaże, czy "outer_disciple" tam jest
     async function fetchAllData() {
       try {
+        console.log("1. Próba fetchowania plików...");
         const [questsRes, assetsRes, recipesRes] = await Promise.all([
           fetch('quests.json'),
           fetch('assets.yaml'),
           fetch('recipes.csv')
         ]);
-
+        console.log("2. Pliki pobrane, sprawdzam statusy...");
         if (!questsRes.ok) throw new Error("Brak pliku quests.json");
         if (!assetsRes.ok) throw new Error("Brak pliku assets.yaml");
         if (!recipesRes.ok) throw new Error("Brak pliku recipes.csv");
 
         QUESTS = await questsRes.json();
-        
+
         const yamlText = await assetsRes.text();
         const assetsObj = jsyaml.load(yamlText);
-        if (assetsObj.cards) assetsObj.cards.forEach(c => { CARD_DEFS[c.id] = c; });
-        if (assetsObj.packs) assetsObj.packs.forEach(p => { PACK_DEFS[p.id] = p; });
+        console.log("3. Assets sparsowane:", assetsObj);
+        if (Array.isArray(assetsObj)) {
+          assetsObj.forEach(c => { CARD_DEFS[c.id] = c; });
+        } else if (assetsObj) {
+          if (assetsObj.cards) assetsObj.cards.forEach(c => { CARD_DEFS[c.id] = c; });
+          if (assetsObj.packs) assetsObj.packs.forEach(p => { PACK_DEFS[p.id] = p; });
+        }
 
         const csvText = await recipesRes.text();
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
           complete: (res) => {
-                    RECIPES = res.data
-                      .filter(r => r.input_a) // ignoruj puste
-                      .map(r => ({
-                        a: String(r.input_a).trim(),
-                        b: String(r.input_b || "").trim(),
-                        out: String(r.output_a || r.output || "").trim(),
-                        out_b: String(r.output_b || "").trim(),
-                        time: parseInt(r.time_seconds || 5)
-                      }));
-                    setLoading(false);
+            RECIPES = res.data
+              .filter(r => r.input_a) // ignoruj puste
+              .map(r => ({
+                a: String(r.input_a).trim(),
+                b: String(r.input_b || "").trim(),
+                out: String(r.output_a || r.output || "").trim(),
+                out_b: String(r.output_b || "").trim(),
+                time: parseInt(r.time_seconds || 5)
+              }));
+            setLoading(false);
           }
         });
 
