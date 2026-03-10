@@ -128,9 +128,44 @@ function RecipeBook() {
     </div>
   );
 }
+const useBackgroundMusic = (url) => {
+  const audioRef = useRef(null);
+
+  useEffect(() => {
+    // Tworzymy obiekt audio tylko raz
+    if (!audioRef.current) {
+      audioRef.current = new Audio(url);
+    }
+
+    const music = audioRef.current;
+    music.loop = true;
+    music.volume = 0.2; // Głośność 20%
+
+    const startMusic = () => {
+      music.play().catch(err => console.log("Błąd odtwarzania:", err));
+      window.removeEventListener('click', startMusic);
+      window.removeEventListener('keydown', startMusic);
+    };
+
+    // Próbujemy odtworzyć od razu (przejdzie jeśli uszkodzina/strona była już interaktywna)
+    music.play().catch(err => {
+      console.log("Czekam na interakcję (click/keydown) dla audio...");
+      window.addEventListener('click', startMusic);
+      window.addEventListener('keydown', startMusic);
+    });
+
+    return () => {
+      music.pause();
+      window.removeEventListener('click', startMusic);
+      window.removeEventListener('keydown', startMusic);
+    };
+  }, [url]);
+};
 
 // ─── GŁÓWNA GRA ──────────────────────────────────────────────────────────────
 function Stacklands() {
+  useBackgroundMusic('bg_soundtrack.mp3');
+
   const [cards, setCards] = useState(() => [
     mkCard("outer_disciple", 100, 110),
 
