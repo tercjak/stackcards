@@ -21,6 +21,7 @@ const CARD_H = 460 / 2;
 
 let _uid = 1;
 const mkCard = (id, x, y) => ({ uid: _uid++, id, x, y });
+const mkAsset = (id, x, y, scale = 3) => ({ uid: _uid++, id, x, y, isAsset: true, scale });
 
 function findRecipe(a, b) {
   return RECIPES.find(r => (r.a === a && r.b === b) || (r.a === b && r.b === a));
@@ -88,6 +89,33 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
         <div style={{ height: craftPct !== undefined ? 0 : 5, background: `linear-gradient(90deg, ${typeColor}44, ${typeColor}22)`, flexShrink: 0 }} />
       </div>
     </div>
+  );
+}
+
+// ─── ASSET ŚRODOWISKOWY (bez UI karty) ──────────────────────────────────────
+function GameAsset({ asset }) {
+  const def = CARD_DEFS[asset.id];
+  if (!def) return null;
+
+  const scale = asset.scale || 3;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: asset.x,
+        top: asset.y,
+        width: CARD_W * scale,
+        height: CARD_H * scale,
+        backgroundImage: def.texture ? `url(${def.texture})` : "none",
+        backgroundSize: "contain",
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "center",
+        opacity: 0.8,
+        pointerEvents: "none",
+        zIndex: 1,
+      }}
+    />
   );
 }
 
@@ -176,6 +204,11 @@ function Stacklands() {
     mkCard("sect_hall", 920, 120),
 
     mkCard("demon_beast", 120, 110),
+
+  ]);
+  const [assets, setAssets] = useState(() => [
+    mkAsset("martial_arena", 1000, 200),
+    mkAsset("crafting_cauldron", 0, 200, 1),
 
   ]);
   const [inventory, setInventory] = useState({});
@@ -397,6 +430,9 @@ function Stacklands() {
           overflow: "hidden"
         }} onMouseDown={(e) => { if (e.target === boardRef.current) { setDragging(null); setHovered(null); } }}>
           <div style={{ position: "absolute", inset: 10, border: "2px solid rgba(180,150,100,0.22)", borderRadius: 10, pointerEvents: "none", background: "rgba(200,180,140,0.06)" }} />
+          {assets.map(asset => (
+            <GameAsset key={asset.uid} asset={asset} />
+          ))}
           {cards.map(card => (
             <GameCard key={card.uid} card={card} isDragging={draggingUid === card.uid} craftPct={craftMap[card.uid]?.pct} craftRemaining={craftMap[card.uid]?.remaining} onMouseDown={(e) => handleMouseDown(e, card)} />
           ))}
@@ -423,25 +459,39 @@ function GameWrapper() {
     async function fetchAllData() {
       try {
         console.log("1. Próba fetchowania plików...");
-        const [questsRes, assetsRes, recipesRes] = await Promise.all([
+        const [questsRes, cardsRes, assetsRes, recipesRes] = await Promise.all([
           fetch('quests.json'),
+          fetch('cards.yaml'),
           fetch('assets.yaml'),
           fetch('recipes.csv')
         ]);
         console.log("2. Pliki pobrane, sprawdzam statusy...");
         if (!questsRes.ok) throw new Error("Brak pliku quests.json");
+        if (!cardsRes.ok) throw new Error("Brak pliku cards.yaml");
         if (!assetsRes.ok) throw new Error("Brak pliku assets.yaml");
         if (!recipesRes.ok) throw new Error("Brak pliku recipes.csv");
 
         QUESTS = await questsRes.json();
 
-        const yamlText = await assetsRes.text();
-        const assetsObj = jsyaml.load(yamlText);
-        console.log("3. Assets sparsowane:", assetsObj);
+        // Load cards from cards.yaml
+        const cardsText = await cardsRes.text();
+        const cardsObj = jsyaml.load(cardsText);
+        console.log("3. Cards sparsowane:", cardsObj);
+        if (Array.isArray(cardsObj)) {
+          cardsObj.forEach(c => { CARD_DEFS[c.id] = c; });
+        } else if (cardsObj) {
+          if (cardsObj.cards) cardsObj.cards.forEach(c => { CARD_DEFS[c.id] = c; });
+          if (cardsObj.packs) cardsObj.packs.forEach(p => { PACK_DEFS[p.id] = p; });
+        }
+
+        // Load assets from assets.yaml
+        const assetsText = await assetsRes.text();
+        const assetsObj = jsyaml.load(assetsText);
+        console.log("4. Assets sparsowane:", assetsObj);
         if (Array.isArray(assetsObj)) {
-          assetsObj.forEach(c => { CARD_DEFS[c.id] = c; });
+          assetsObj.forEach(a => { CARD_DEFS[a.id] = a; });
         } else if (assetsObj) {
-          if (assetsObj.cards) assetsObj.cards.forEach(c => { CARD_DEFS[c.id] = c; });
+          if (assetsObj.buildings) assetsObj.buildings.forEach(a => { CARD_DEFS[a.id] = a; });
           if (assetsObj.packs) assetsObj.packs.forEach(p => { PACK_DEFS[p.id] = p; });
         }
 

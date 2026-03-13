@@ -1,94 +1,20 @@
-  - id: "outer_disciple"
-    name: "Outer Disciple"
-    name_pl: "Zewnętrzny Uczeń"
-    type: "unit"
-    description: "A beginner cultivator from a martial sect."
-    llm_prompt: "Minimalist 2D game card icon of a young wuxia martial sect disciple in simple robes, sword on back, flat vector line art, white background, Stacklands style"
-    texture: "assets/outer_disciple.png"
-    hp: 12
-    tags: ["cultivator", "worker"]
-
-  - id: "spirit_herb"
-    name: "Spirit Herb"
-    name_pl: "Duchowe Zioło"
-    type: "resource"
-    description: "A herb infused with spiritual energy."
-    llm_prompt: "Minimalist 2D game card icon of a glowing mystical herb plant with small blue aura, flat vector line art, white background, Stacklands style"
-    texture: "assets/spirit_herb.png"
-    tags: ["gatherable", "spiritual"]
-
-  - id: "qi_stone"
-    name: "Qi Stone"
-    name_pl: "Kamień Qi"
-    type: "resource"
-    description: "A rock filled with condensed spiritual energy."
-    llm_prompt: "Minimalist 2D game card icon of a glowing jade-like spirit stone with light aura, flat vector line art, white background, Stacklands style"
-    texture: "assets/qi_stone.png"
-    tags: ["gatherable", "spiritual"]
-
-  - id: "spirit_essence"
-    name: "Spirit Essence"
-    name_pl: "Esencja Qi"
-    type: "material"
-    description: "Condensed spiritual energy used for cultivation."
-    llm_prompt: "Minimalist 2D game card icon of a floating glowing orb of spiritual energy, soft aura, flat vector style, white background, Stacklands style"
-    texture: "assets/spirit_essence.png"
-    tags: ["material", "spiritual"]
-
-  - id: "cultivation_manual"
-    name: "Cultivation Manual"
-    name_pl: "Podręcznik Kultywacji"
-    type: "knowledge"
-    description: "A martial manual describing cultivation techniques."
-    llm_prompt: "Minimalist 2D game card icon of an ancient martial arts scroll with red seal, flat vector line art, white background, Stacklands style"
-    texture: "assets/cultivation_manual.png"
-    tags: ["knowledge"]
-
-  - id: "spirit_pill"
-    name: "Spirit Pill"
-    name_pl: "Pigułka Qi"
-    type: "consumable"
-    description: "A pill that accelerates cultivation."
-    llm_prompt: "Minimalist 2D game card icon of a glowing alchemy pill in small jade container, flat vector line art, white background, Stacklands style"
-    texture: "assets/spirit_pill.png"
-    value: 5
-    tags: ["alchemy", "consumable"]
-
-  - id: "spirit_sword"
-    name: "Spirit Sword"
-    name_pl: "Duchowy Miecz"
-    type: "weapon"
-    description: "A sword infused with spiritual power."
-    llm_prompt: "Minimalist 2D game card icon of a glowing wuxia spirit sword floating slightly, light aura, flat vector line art, white background, Stacklands style"
-    texture: "assets/spirit_sword.png"
-    attack: 7
-    tags: ["weapon", "spiritual"]
-
-  - id: "sect_hall"
-    name: "Sect Hall"
-    name_pl: "Sala Sekty"
+  - id: "martial_arena"
+    name: "Martial Arena"
+    name_pl: "Arena Walki"
     type: "building"
-    description: "The center of a martial sect."
-    llm_prompt: "Minimalist 2D game card icon of a traditional chinese martial sect hall building with curved roof, flat vector line art, white background, Stacklands style"
-    texture: "assets/sect_hall.png"
-    tags: ["building", "sect"]
+    description: "A stone circular fighting platform with yin-yang symbol for martial duels."
+    llm_prompt: "minimalist 2D game icon, circular stone martial arts platform with carved yin-yang symbol, top-down view, single centered object, flat vector line art, black and white, clean white
+background, no environment, no buildings, no trees, UI icon"
+    texture: "assets/martial_arena4.png"
+    tags: ["building", "sect", "combat"]
 
-  - id: "alchemy_cauldron"
+
+
+  - id: "crafting_cauldron"
     name: "Alchemy Cauldron"
     name_pl: "Kocioł Alchemiczny"
     type: "building"
     description: "Used to refine pills and elixirs."
     llm_prompt: "Minimalist 2D game card icon of a chinese alchemy cauldron with faint spiritual smoke, flat vector line art, white background, Stacklands style"
-    texture: "assets/alchemy_cauldron.png"
+    texture: "assets/crafting_caldron.png"
     tags: ["building", "alchemy"]
-
-  - id: "demon_beast"
-    name: "Demon Beast"
-    name_pl: "Demoniczna Bestia"
-    type: "enemy"
-    description: "A corrupted spirit beast."
-    llm_prompt: "Minimalist 2D game card icon of a fierce mystical demon beast with glowing eyes, flat vector style, white background, Stacklands style"
-    texture: "assets/demon_beast.png"
-    hp: 16
-    attack: 5
-    tags: ["enemy", "spirit_beast"]
