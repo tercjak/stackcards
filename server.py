@@ -30,18 +30,18 @@ class MapEditorHandler(http.server.SimpleHTTPRequestHandler):
         parsed_path = urlparse(self.path)
 
         if parsed_path.path == '/api/maps/save':
-            # Get map name from query params
-            query_params = parse_qs(parsed_path.query)
-            map_name = query_params.get('name', ['unnamed_map'])[0]
-
-            # Sanitize map name
-            map_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in map_name)
-
-            # Read request body
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-
             try:
+                # Get map name from query params
+                query_params = parse_qs(parsed_path.query)
+                map_name = query_params.get('name', ['unnamed_map'])[0]
+
+                # Sanitize map name
+                map_name = ''.join(c if c.isalnum() or c == '_' else '_' for c in map_name)
+
+                # Read request body
+                content_length = int(self.headers.get('Content-Length', 0))
+                post_data = self.rfile.read(content_length)
+
                 # Parse JSON data
                 map_data = json.loads(post_data.decode('utf-8'))
 
@@ -65,30 +65,37 @@ class MapEditorHandler(http.server.SimpleHTTPRequestHandler):
                     json.dump(index_data, f, indent=2)
 
                 # Send success response
+                response = {"success": True, "file": file_path}
+                response_body = json.dumps(response).encode('utf-8')
+
                 self.send_response(200)
                 self.send_header('Content-type', 'application/json')
                 self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', len(response_body))
                 self.end_headers()
-
-                response = {"success": True, "file": file_path}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                self.wfile.write(response_body)
 
                 print(f"Saved map: {file_path}")
 
             except json.JSONDecodeError as e:
+                response = {"success": False, "error": f"Invalid JSON: {str(e)}"}
+                response_body = json.dumps(response).encode('utf-8')
                 self.send_response(400)
                 self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', len(response_body))
                 self.end_headers()
-                response = {"success": False, "error": f"Invalid JSON: {str(e)}"}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
+                self.wfile.write(response_body)
 
             except Exception as e:
+                response = {"success": False, "error": str(e)}
+                response_body = json.dumps(response).encode('utf-8')
                 self.send_response(500)
                 self.send_header('Content-type', 'application/json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Content-Length', len(response_body))
                 self.end_headers()
-                response = {"success": False, "error": str(e)}
-                self.wfile.write(json.dumps(response).encode('utf-8'))
-
+                self.wfile.write(response_body)
         else:
             # For other POST requests, return 404
             self.send_response(404)
@@ -103,12 +110,16 @@ class MapEditorHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        """Handle GET requests."""
-        # Add CORS headers to all responses
-        self.send_response(200)
-        self.send_header('Access-Control-Allow-Origin', '*')
+        """Handle GET requests with CORS headers."""
+        # Add CORS header to response
+        # Override send_response to inject CORS header
+        original_send_response = self.send_response
+        def send_response_with_cors(code, message=None):
+            original_send_response(code, message)
+            self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_response = send_response_with_cors
         # Continue with default GET handling
-        return super().do_GET()
+        super().do_GET()
 
 if __name__ == "__main__":
     # Change to script directory

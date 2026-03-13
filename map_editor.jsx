@@ -204,7 +204,7 @@ function MapEditor() {
     setSelectedItem(alchemyCauldron);
   };
 
-  // Save map
+  // Save map - sends to server via POST /api/maps/save
   const handleSave = async () => {
     const mapData = {
       id: mapName,
@@ -238,20 +238,20 @@ function MapEditor() {
         body: JSON.stringify(mapData)
       });
 
-      if (response.ok) {
-        alert(`Map "${mapName}" saved successfully!`);
+      // Check if response is OK before parsing JSON
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert(`Map "${mapName}" saved successfully to ${result.file}!`);
       } else {
-        // Fallback: download as JSON file
-        const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `maps/${mapName}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        alert('Map downloaded as JSON file (server save failed)');
+        throw new Error(result.error || 'Server returned error');
       }
     } catch (err) {
+      console.error('Save error:', err);
       // Fallback: download as JSON file
       const blob = new Blob([JSON.stringify(mapData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -260,7 +260,7 @@ function MapEditor() {
       a.download = `maps/${mapName}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      alert('Map downloaded as JSON file (server not available)');
+      alert(`Server save failed: ${err.message}. Downloaded map as JSON file.`);
     }
   };
 
