@@ -101,3 +101,12 @@
     llm_prompt: "Minimalist 2D game card icon of wuxia martial arena courtyard, stone circular fighting platform with yin-yang symbol carved into center, flat vector line art, white background, Stacklands style"
     texture: "assets/martial_arena.png"
     tags: ["building", "sect", "combat"]
+
+  - id: "qi_stone"
+    name: "Qi Stone"
+    name_pl: "Kamień Qi"
+    type: "material"
+    description: "A crystallized stone of pure spiritual energy used in alchemy."
+    llm_prompt: "Minimalist 2D game card icon of a glowing light blue qi crystal stone with spiritual aura, diamond-like shape, flat vector line art, white background, Stacklands style"
+    texture: "assets/qi_stone.png"
+    tags: ["material", "spiritual", "alchemy_ingredient"]

@@ -1,20 +1,63 @@
-  - id: "martial_arena"
-    name: "Martial Arena"
-    name_pl: "Arena Walki"
-    type: "building"
-    description: "A stone circular fighting platform with yin-yang symbol for martial duels."
-    llm_prompt: "minimalist 2D game icon, circular stone martial arts platform with carved yin-yang symbol, top-down view, single centered object, flat vector line art, black and white, clean white
-background, no environment, no buildings, no trees, UI icon"
-    texture: "assets/martial_arena4.png"
-    tags: ["building", "sect", "combat"]
+- id: "martial_arena"
+  name: "Martial Arena"
+  name_pl: "Arena Walki"
+  type: "building"
+  description: "A stone circular fighting platform with yin-yang symbol for martial duels."
+  llm_prompt: "minimalist 2D game icon, circular stone martial arts platform with carved yin-yang symbol, top-down view, single centered object, flat vector line art, black and white, clean white background, no environment, no buildings, no trees, UI icon"
+  texture: "assets/martial_arena4.png"
+  tags: ["building", "sect", "combat"]
 
+- id: "spirit_pill_p"
+  name: "Perfect Spirit Pill"
+  name_pl: "Idealna Pigułka Qi"
+  type: "consumable"
+  description: "A perfectly refined pill with maximum spiritual potency."
+  llm_prompt: "Minimalist 2D game card icon of a perfect round crimson alchemy pill with golden aura and flame patterns, top quality, flat vector line art, white background, Stacklands style"
+  texture: "assets/spirit_pill_p.png"
+  value: 20
+  tags: ["alchemy", "consumable", "perfect"]
 
+- id: "imp_pill_p"
+  name: "Perfect Improved Pill"
+  name_pl: "Idealna Ulepszona Pigułka"
+  type: "consumable"
+  description: "A perfectly refined improved pill with exceptional potency."
+  llm_prompt: "Minimalist 2D game card icon of a perfect purple-gold alchemy pill with intricate flame patterns and strong aura, flat vector line art, white background, Stacklands style"
+  texture: "assets/imp_pill_p.png"
+  value: 35
+  tags: ["alchemy", "consumable", "perfect"]
 
-  - id: "crafting_cauldron"
-    name: "Alchemy Cauldron"
-    name_pl: "Kocioł Alchemiczny"
-    type: "building"
-    description: "Used to refine pills and elixirs."
-    llm_prompt: "Minimalist 2D game card icon of a chinese alchemy cauldron with faint spiritual smoke, flat vector line art, white background, Stacklands style"
-    texture: "assets/crafting_caldron.png"
-    tags: ["building", "alchemy"]
+- id: "spirit_sword_p"
+  name: "Perfect Spirit Sword"
+  name_pl: "Idealny Duchowy Miecz"
+  type: "weapon"
+  description: "A perfectly forged sword with maximum spiritual power."
+  llm_prompt: "Minimalist 2D game card icon of a perfect wuxia spirit sword with brilliant blue-white aura, elegant blade with rune patterns, flat vector line art, white background, Stacklands style"
+  texture: "assets/spirit_sword_p.png"
+  attack: 15
+  tags: ["weapon", "spiritual", "perfect"]
+
+- id: "qi_stone"
+  name: "Qi Stone"
+  name_pl: "Kamień Qi"
+  type: "material"
+  description: "A crystallized stone of pure spiritual energy used in alchemy."
+  llm_prompt: "Minimalist 2D game card icon of a glowing light blue qi crystal stone with spiritual aura, diamond-like shape, flat vector line art, white background, Stacklands style"
+  texture: "assets/qi_stone.png"
+  tags: ["material", "spiritual", "alchemy_ingredient"]
+
+- id: "crafting_cauldron_top"
+  name: "Alchemy Cauldron Top"
+  name_pl: "Kocioł Alchemiczny - Góra"
+  type: "building"
+  description: "Top part of the alchemy cauldron with crafting grid."
+  texture: "assets/crafting_caldron_top.png"
+  tags: ["building", "alchemy", "crafting"]
+
+- id: "crafting_cauldron_bottom"
+  name: "Alchemy Cauldron Bottom"
+  name_pl: "Kocioł Alchemiczny - Dół"
+  type: "building"
+  description: "Bottom part of the alchemy cauldron with legs."
+  texture: "assets/crafting_caldron_bottom.png"
+  tags: ["building", "alchemy"]

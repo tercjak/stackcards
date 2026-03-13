@@ -3,11 +3,15 @@ console.log("Skrypt startuje!");
 
 const { useState, useEffect, useRef, useCallback } = window.React;
 
+// ─── DEBUG FLAGI ─────────────────────────────────────────────────────────────
+const DEBUG_CAULDRON_GRID = false; // Pokaż siatkę 3x3 na kociołku (tylko debug)
+
 // ─── ZMIENNE GLOBALNE NA DANE Z PLIKÓW ───────────────────────────────────────
 let CARD_DEFS = {};
 let PACK_DEFS = {};
 let RECIPES = [];
 let QUESTS = [];
+let CRAFTING_RECIPES = []; // Nowe receptury 3x3 z crafting_recipes.csv
 
 const TYPE_COLORS = {
   unit: "#4a90d9", resource: "#5aaa60", food: "#9b59b6",
@@ -93,29 +97,152 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
 }
 
 // ─── ASSET ŚRODOWISKOWY (bez UI karty) ──────────────────────────────────────
-function GameAsset({ asset }) {
+function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredSlot, onCauldronDragStart, draggingFromSlot, handleSlotDragStart, slotDragStarted }) {
   const def = CARD_DEFS[asset.id];
   if (!def) return null;
 
-  const scale = asset.scale || 3;
+  const isCauldronTop = asset.id === "crafting_cauldron_top";
+  const isCauldronBottom = asset.id === "crafting_cauldron_bottom";
+  const isCauldron = isCauldronTop || isCauldronBottom || asset.id === "alchemy_cauldron";
+
+  // Cauldron parts use fixed dimensions based on actual image sizes (scaled down 3x)
+  // The crafting grid (3x3) is centered within a 4x4 pixel art grid on the image
+  // Image: 524x515, each 4x4 cell = 131x128.75px, 3x3 grid starts at 0.5 cell offset
+  const CAULDRON_TOP_W = 524 / 3;  // ~174.67px (full image scaled)
+  const CAULDRON_TOP_H = 515 / 3;  // ~171.67px (full image scaled)
+
+  // Active crafting grid area (3x3 within 4x4 image grid)
+  const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;  // ~21.83px - left margin to 3x3 grid
+  const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;  // ~21.46px - top margin to 3x3 grid
+  const GRID_W = (524 / 4) * 3 / 3;  // ~131px - width of 3x3 grid area
+  const GRID_H = (515 / 4) * 3 / 3;  // ~128.75px - height of 3x3 grid area
+
+  // Individual slot dimensions within the 3x3 crafting grid
+  const SLOT_W = GRID_W / 3;  // ~43.67px
+  const SLOT_H = GRID_H / 3;  // ~42.92px
+
+  const width = isCauldronTop ? CAULDRON_TOP_W : isCauldronBottom ? 420 / 3 : CARD_W * (asset.scale || 1);
+  const height = isCauldronTop ? CAULDRON_TOP_H : isCauldronBottom ? 103 / 3 : CARD_H * (asset.scale || 1);
+
+  // Slot positions - pixel-perfect with NO gaps, centered within 4x4 image grid
+  // Positions are top-left corners of each slot in pixels (relative to container div)
+  const slotPositions = [
+    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y },                           // slot 0 (top-left)
+    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y },                  // slot 1 (top-center)
+    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y },              // slot 2 (top-right)
+    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y + SLOT_H },                  // slot 3 (middle-left)
+    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y + SLOT_H },         // slot 4 (center)
+    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y + SLOT_H },     // slot 5 (middle-right)
+    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y + SLOT_H * 2 },              // slot 6 (bottom-left)
+    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y + SLOT_H * 2 },     // slot 7 (bottom-center)
+    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y + SLOT_H * 2 }, // slot 8 (bottom-right)
+  ];
+
+  // Get recipe requirements if selected
+  const recipe = selectedRecipe ? CRAFTING_RECIPES.find(r => r.id === selectedRecipe) : null;
 
   return (
     <div
+      onMouseDown={(e) => {
+        if (isCauldronBottom && onCauldronDragStart && cauldronSlots.every(s => s === null)) {
+          onCauldronDragStart(e);
+        }
+      }}
       style={{
         position: "absolute",
         left: asset.x,
         top: asset.y,
-        width: CARD_W * scale,
-        height: CARD_H * scale,
+        width: width,
+        height: height,
         backgroundImage: def.texture ? `url(${def.texture})` : "none",
         backgroundSize: "contain",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
-        opacity: 0.8,
-        pointerEvents: "none",
-        zIndex: 1,
+        opacity: isCauldron ? 1 : 0.8,
+        pointerEvents: isCauldronTop ? "auto" : isCauldronBottom && cauldronSlots.every(s => s === null) ? "auto" : "none",
+        zIndex: isCauldronBottom ? 1 : 2,
+        cursor: isCauldronBottom && cauldronSlots.every(s => s === null) ? "grab" : "default"
       }}
-    />
+    >
+      {/* DEBUG: Show grid area boundary */}
+      {DEBUG_CAULDRON_GRID && isCauldronTop && (
+        <div
+          style={{
+            position: "absolute",
+            left: GRID_OFFSET_X,
+            top: GRID_OFFSET_Y,
+            width: GRID_W,
+            height: GRID_H,
+            border: "2px dashed #ff0000",
+            background: "rgba(255, 0, 0, 0.1)",
+            pointerEvents: "none",
+            zIndex: 50
+          }}
+        />
+      )}
+
+      {/* Cauldron slot overlays - only on top part */}
+      {isCauldronTop && cauldronSlots && slotPositions.map((pos, i) => {
+        const card = cauldronSlots[i];
+        const inputKey = `input${Math.floor(i/3)}${i%3}`;
+        const requiredId = recipe ? recipe[inputKey] : null;
+        const isActive = !!requiredId;
+        const isFilled = card && card.id === requiredId;
+        const showRequirement = recipe && requiredId && !card;
+        const isHovered = hoveredSlot === i;
+        const isDraggingFromThisSlot = draggingFromSlot === i;
+
+        return (
+          <div
+            key={i}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              if (card) {
+                handleSlotDragStart(e, i);
+              }
+            }}
+            onClick={(e) => {
+              if (slotDragStarted) return; // Prevent click if drag occurred
+              e.stopPropagation();
+              if (card) onSlotClick && onSlotClick(i);
+            }}
+            style={{
+              position: "absolute",
+              left: pos.x,
+              top: pos.y,
+              width: SLOT_W,
+              height: SLOT_H,
+              background: isHovered ? "rgba(58,158,253,0.4)" : isFilled ? "rgba(123,194,68,0.35)" : showRequirement ? "rgba(255,215,0,0.2)" : "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: card ? "grab" : "default",
+              pointerEvents: card ? "auto" : "none",
+              transition: "background 0.1s",
+              userSelect: "none",
+              opacity: isDraggingFromThisSlot ? 0.3 : 1
+            }}
+          >
+              {/* Card icon if placed (hidden while dragging) */}
+              {card && CARD_DEFS[card.id] && !isDraggingFromThisSlot && (
+                CARD_DEFS[card.id].texture ? (
+                  <img src={CARD_DEFS[card.id].texture} alt="" style={{ width: "80%", height: "80%", objectFit: "contain" }} />
+                ) : (
+                  <span style={{ fontSize: 14 }}>{CARD_DEFS[card.id].emoji || "?"}</span>
+                )
+              )}
+              {/* Recipe requirement preview (ghost image) */}
+              {showRequirement && !card && CARD_DEFS[requiredId] && (
+                CARD_DEFS[requiredId].texture ? (
+                  <img src={CARD_DEFS[requiredId].texture} alt="" style={{ width: "75%", height: "75%", objectFit: "contain", opacity: 0.5 }} />
+                ) : (
+                  <span style={{ fontSize: 12, opacity: 0.5 }}>{CARD_DEFS[requiredId].emoji || "?"}</span>
+                )
+              )}
+            </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -208,7 +335,8 @@ function Stacklands() {
   ]);
   const [assets, setAssets] = useState(() => [
     mkAsset("martial_arena", 1000, 200),
-    mkAsset("crafting_cauldron", 0, 200, 1),
+    mkAsset("crafting_cauldron_top", 0, 200, 1),
+    mkAsset("crafting_cauldron_bottom", (524 - 420) / 2 / 3, 200 + 515 / 3 - 10, 1),
 
   ]);
   const [inventory, setInventory] = useState({});
@@ -221,6 +349,15 @@ function Stacklands() {
   const [unlockedPacks, setUnlocked] = useState(["humble_beginnings"]);
   const [toasts, setToasts] = useState([]);
   const [hovered, setHovered] = useState(null);
+  const [cauldronSlots, setCauldronSlots] = useState(Array(9).fill(null)); // 3x3 grid
+  const [selectedRecipe, setSelectedRecipe] = useState(null); // Selected recipe from dropdown
+  const [draggedCard, setDraggedCard] = useState(null); // Card being dragged for cauldron
+  const [cauldronHoveredSlot, setCauldronHoveredSlot] = useState(null);
+  const [draggingFromSlot, setDraggingFromSlot] = useState(null); // Slot index being dragged from
+  const [draggedSlotCard, setDraggedSlotCard] = useState(null); // Card data for rendering during slot drag
+  const [slotDragStarted, setSlotDragStarted] = useState(false); // Track if drag occurred
+  const [draggingCauldron, setDraggingCauldron] = useState(false);
+  const [cauldronDragOffset, setCauldronDragOffset] = useState({ x: 0, y: 0 }); // Debug: current hovered slot
 
   const boardRef = useRef(null);
   const dragRef = useRef(null);
@@ -237,12 +374,48 @@ function Stacklands() {
     const br = boardRef.current.getBoundingClientRect();
     dragRef.current = { uid: card.uid, ox: e.clientX - br.left - card.x, oy: e.clientY - br.top - card.y };
     setDragging(card.uid); setHovered(card.id);
+    setDraggedCard(card); // Track dragged card for cauldron drop
     setCards(prev => {
       const idx = prev.findIndex(c => c.uid === card.uid);
       if (idx === -1) return prev;
       return [...prev.slice(0, idx), ...prev.slice(idx + 1), prev[idx]];
     });
   }, []);
+
+  const handleCauldronDragStart = useCallback((e) => {
+    e.preventDefault(); e.stopPropagation();
+    const topAsset = assets.find(a => a.id === "crafting_cauldron_top");
+    if (!topAsset) return;
+    const br = boardRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - br.left;
+    const mouseY = e.clientY - br.top;
+    setCauldronDragOffset({ x: mouseX - topAsset.x, y: mouseY - topAsset.y });
+    setDraggingCauldron(true);
+  }, [assets]);
+
+  const handleSlotDragStart = useCallback((e, slotIndex) => {
+    e.preventDefault(); e.stopPropagation();
+    const card = cauldronSlots[slotIndex];
+    if (!card) return;
+
+    const topAsset = assets.find(a => a.id === "crafting_cauldron_top");
+    if (!topAsset) return;
+
+    const br = boardRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - br.left;
+    const mouseY = e.clientY - br.top;
+
+    // Calculate card position to follow cursor
+    const cardX = mouseX - CARD_W / 2;
+    const cardY = mouseY - CARD_H / 2;
+
+    setDraggingFromSlot(slotIndex);
+    setDragging(card.uid);
+    setHovered(card.id);
+    setSlotDragStarted(false); // Reset drag flag
+    // Create a temporary card for rendering during drag (not in cards array)
+    setDraggedSlotCard({ ...card, x: cardX, y: cardY });
+  }, [cauldronSlots, assets, setDraggingFromSlot, setDragging, setHovered, setSlotDragStarted, setDraggedSlotCard]);
 
   useEffect(() => {
     const onMove = (e) => {
@@ -251,10 +424,92 @@ function Stacklands() {
       const nx = Math.max(0, Math.min(br.width - CARD_W, e.clientX - br.left - drag.ox));
       const ny = Math.max(0, Math.min(br.height - CARD_H, e.clientY - br.top - drag.oy));
       setCards(prev => prev.map(c => c.uid === drag.uid ? { ...c, x: nx, y: ny } : c));
+
+      // Check if hovering over cauldron slot
+      const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+      if (cauldronAsset && draggedCard) {
+        const cx = cauldronAsset.x;
+        const cy = cauldronAsset.y;
+        const cw = 524 / 3;
+        const ch = 515 / 3;
+
+        // Active crafting grid area (3x3 within 4x4 image grid)
+        const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
+        const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
+        const GRID_W = (524 / 4) * 3 / 3;
+        const GRID_H = (515 / 4) * 3 / 3;
+        const SLOT_W = GRID_W / 3;
+        const SLOT_H = GRID_H / 3;
+
+        if (nx >= cx && nx <= cx + cw && ny >= cy && ny <= cy + ch) {
+          const relativeX = nx - cx - GRID_OFFSET_X;
+          const relativeY = ny - cy - GRID_OFFSET_Y;
+          const slotX = Math.floor(relativeX / SLOT_W);
+          const slotY = Math.floor(relativeY / SLOT_H);
+          const slotIndex = slotY * 3 + slotX;
+
+          if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
+            setCauldronHoveredSlot(slotIndex);
+          } else {
+            setCauldronHoveredSlot(null);
+          }
+        } else {
+          setCauldronHoveredSlot(null);
+        }
+      } else {
+        setCauldronHoveredSlot(null);
+      }
     };
     const onUp = () => {
       const drag = dragRef.current; if (!drag) return;
-      const movedUid = drag.uid; dragRef.current = null; setDragging(null);
+      const movedUid = drag.uid;
+      const movedCard = draggedCard;
+      dragRef.current = null; setDragging(null); setDraggedCard(null);
+      setCauldronHoveredSlot(null); // Clear hover on drop
+
+      // Check if dropped on cauldron
+      const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+      if (cauldronAsset && movedCard) {
+        const cx = cauldronAsset.x;
+        const cy = cauldronAsset.y;
+        const cw = 524 / 3;
+        const ch = 515 / 3;
+
+        // Active crafting grid area (3x3 within 4x4 image grid)
+        const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
+        const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
+        const GRID_W = (524 / 4) * 3 / 3;
+        const GRID_H = (515 / 4) * 3 / 3;
+        const SLOT_W = GRID_W / 3;
+        const SLOT_H = GRID_H / 3;
+
+        const cardPos = cards.find(c => c.uid === movedUid);
+
+        // Check if card is within cauldron bounds
+        if (cardPos &&
+            cardPos.x >= cx && cardPos.x <= cx + cw &&
+            cardPos.y >= cy && cardPos.y <= cy + ch) {
+
+          // Find which slot the card should go to based on position
+          const relativeX = cardPos.x - cx - GRID_OFFSET_X;
+          const relativeY = cardPos.y - cy - GRID_OFFSET_Y;
+          const slotX = Math.floor(relativeX / SLOT_W);
+          const slotY = Math.floor(relativeY / SLOT_H);
+          const slotIndex = slotY * 3 + slotX;
+
+          if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
+            // Add card to slot - remove from board
+            setCards(prev => prev.filter(c => c.uid !== movedUid));
+            const newSlots = [...cauldronSlots];
+            newSlots[slotIndex] = movedCard;
+            setCauldronSlots(newSlots);
+            toast(`Added ${CARD_DEFS[movedCard.id]?.name} to slot ${slotIndex}`);
+            return; // Don't process regular crafting
+          }
+        }
+      }
+
+      // Regular card-to-card crafting
       setCards(prev => {
         const moved = prev.find(c => c.uid === movedUid); if (!moved) return prev;
         const target = prev.find(c => c.uid !== movedUid && Math.abs(c.x - moved.x) < CARD_W * 0.7 && Math.abs(c.y - moved.y) < CARD_H * 0.7);
@@ -269,7 +524,113 @@ function Stacklands() {
     };
     window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
     return () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
-  }, []);
+  }, [draggedCard, assets, cauldronSlots]);
+
+  // Slot drag-to-remove handling
+  useEffect(() => {
+    if (draggingFromSlot === null) return;
+
+    const onMove = (e) => {
+      const br = boardRef.current?.getBoundingClientRect();
+      if (!br) return;
+
+      const mouseX = e.clientX - br.left;
+      const mouseY = e.clientY - br.top;
+
+      // Mark that a drag actually occurred (not just a click)
+      setSlotDragStarted(true);
+
+      // Update dragged card position to follow cursor
+      setDraggedSlotCard(prev => {
+        if (!prev) return null;
+        return { ...prev, x: mouseX - CARD_W / 2, y: mouseY - CARD_H / 2 };
+      });
+    };
+
+    const onUp = (e) => {
+      const br = boardRef.current?.getBoundingClientRect();
+      if (!br) return;
+
+      const mouseX = e.clientX - br.left;
+      const mouseY = e.clientY - br.top;
+
+      // Check if dropped outside cauldron area
+      const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+      const cardInSlot = cauldronSlots[draggingFromSlot];
+
+      if (cardInSlot && cauldronAsset) {
+        const cx = cauldronAsset.x;
+        const cy = cauldronAsset.y;
+        const cw = 524 / 3;
+        const ch = 515 / 3;
+
+        // Check if dropped outside cauldron bounds
+        const outsideCauldron = mouseX < cx || mouseX > cx + cw || mouseY < cy || mouseY > cy + ch;
+
+        if (outsideCauldron) {
+          // Remove card from slot and add to board at drop position
+          const newCard = { ...cardInSlot, x: mouseX - CARD_W / 2, y: mouseY - CARD_H / 2 };
+          setCards(prev => [...prev, newCard]);
+
+          // Clear the slot
+          const newSlots = [...cauldronSlots];
+          newSlots[draggingFromSlot] = null;
+          setCauldronSlots(newSlots);
+
+          toast("Ingredient removed from cauldron");
+        }
+        // If dropped inside cauldron, card stays in slot (no action needed)
+      }
+
+      // Reset drag state
+      setDraggingFromSlot(null);
+      setDragging(null);
+      setDraggedSlotCard(null);
+      setSlotDragStarted(false);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [draggingFromSlot, cauldronSlots, assets]);
+
+  // Cauldron drag handling
+  useEffect(() => {
+    const onCauldronMove = (e) => {
+      if (!draggingCauldron) return;
+      const br = boardRef.current?.getBoundingClientRect();
+      if (!br) return;
+      const newX = e.clientX - br.left - cauldronDragOffset.x;
+      const newY = e.clientY - br.top - cauldronDragOffset.y;
+
+      setAssets(prev => prev.map(a => {
+        if (a.id === "crafting_cauldron_top") {
+          return { ...a, x: newX, y: newY };
+        }
+        if (a.id === "crafting_cauldron_bottom") {
+          return { ...a, x: newX + (524 - 420) / 2 / 3, y: newY + 515 / 3 - 10 };
+        }
+        return a;
+      }));
+    };
+
+    const onCauldronUp = () => {
+      setDraggingCauldron(false);
+    };
+
+    if (draggingCauldron) {
+      window.addEventListener("mousemove", onCauldronMove);
+      window.addEventListener("mouseup", onCauldronUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", onCauldronMove);
+      window.removeEventListener("mouseup", onCauldronUp);
+    };
+  }, [draggingCauldron, cauldronDragOffset]);
 
   useEffect(() => {
     const tick = setInterval(() => {
@@ -365,6 +726,76 @@ function Stacklands() {
     toast(`📦 Wylosowano nową kartę!`);
   };
 
+  const handleCauldronCraft = () => {
+    // Find matching recipe for current slot configuration
+    const activeSlots = [1, 3, 4, 5, 7];
+    const matchingRecipe = CRAFTING_RECIPES.find(recipe => {
+      for (let i of activeSlots) {
+        const inputKey = `input${Math.floor(i/3)}${i%3}`;
+        const requiredId = recipe[inputKey];
+        if (requiredId && (!cauldronSlots[i] || cauldronSlots[i].id !== requiredId)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (!matchingRecipe) {
+      toast("❌ Ingredients don't match any recipe!");
+      return;
+    }
+
+    // Get output
+    const output = matchingRecipe.output_perfect1;
+    if (!output) {
+      toast("❌ Invalid recipe output!");
+      return;
+    }
+
+    // Remove ingredients from slots
+    const usedUids = new Set();
+    cauldronSlots.forEach(card => { if (card) usedUids.add(card.uid); });
+
+    // Find cauldron position for spawn
+    const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+    const spawnX = cauldronAsset ? cauldronAsset.x + 150 : 400;
+    const spawnY = cauldronAsset ? cauldronAsset.y + 200 : 300;
+
+    // Remove used cards and add product
+    setCards(prev => {
+      const filtered = prev.filter(c => !usedUids.has(c.uid));
+      filtered.push(mkCard(output, spawnX, spawnY));
+      return filtered;
+    });
+
+    // Clear slots
+    setCauldronSlots(Array(9).fill(null));
+
+    toast(`✨ Crafted: ${CARD_DEFS[output]?.name || output}!`);
+  };
+
+  // Check if cauldron slots match ANY recipe
+  const canCraft = (() => {
+    const activeSlots = [1, 3, 4, 5, 7];
+    // Check if all active slots are filled
+    const allFilled = activeSlots.every(i => cauldronSlots[i] !== null);
+    if (!allFilled) return false;
+
+    // Check if any recipe matches
+    const matchingRecipe = CRAFTING_RECIPES.find(recipe => {
+      for (let i of activeSlots) {
+        const inputKey = `input${Math.floor(i/3)}${i%3}`;
+        const requiredId = recipe[inputKey];
+        if (requiredId && (!cauldronSlots[i] || cauldronSlots[i].id !== requiredId)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return !!matchingRecipe;
+  })();
+
   const allPackIds = Object.keys(PACK_DEFS);
   const totalSlots = Math.max(7, allPackIds.length + 4);
   const packSlots = [...allPackIds, ...Array(totalSlots - allPackIds.length).fill(null)];
@@ -431,14 +862,134 @@ function Stacklands() {
         }} onMouseDown={(e) => { if (e.target === boardRef.current) { setDragging(null); setHovered(null); } }}>
           <div style={{ position: "absolute", inset: 10, border: "2px solid rgba(180,150,100,0.22)", borderRadius: 10, pointerEvents: "none", background: "rgba(200,180,140,0.06)" }} />
           {assets.map(asset => (
-            <GameAsset key={asset.uid} asset={asset} />
+            <GameAsset
+              key={asset.uid}
+              asset={asset}
+              selectedRecipe={selectedRecipe}
+              cauldronSlots={cauldronSlots}
+              hoveredSlot={cauldronHoveredSlot}
+              onCauldronDragStart={handleCauldronDragStart}
+              draggingFromSlot={draggingFromSlot}
+              handleSlotDragStart={handleSlotDragStart}
+              slotDragStarted={slotDragStarted}
+              onSlotClick={(slotIndex) => {
+                const card = cauldronSlots[slotIndex];
+                if (card) {
+                  // Return card to board AWAY from cauldron (not on top of it)
+                  const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+                  const spawnX = cauldronAsset ? cauldronAsset.x - 200 : 100;
+                  const spawnY = cauldronAsset ? cauldronAsset.y + 100 : 250;
+                  const returnedCard = { ...card, x: spawnX, y: spawnY };
+
+                  setCards(prev => [...prev, returnedCard]);
+                  const newSlots = [...cauldronSlots];
+                  newSlots[slotIndex] = null;
+                  setCauldronSlots(newSlots);
+                  toast("Ingredient returned to board");
+                }
+              }}
+            />
           ))}
           {cards.map(card => (
             <GameCard key={card.uid} card={card} isDragging={draggingUid === card.uid} craftPct={craftMap[card.uid]?.pct} craftRemaining={craftMap[card.uid]?.remaining} onMouseDown={(e) => handleMouseDown(e, card)} />
           ))}
+
+          {/* Render card being dragged from cauldron slot */}
+          {draggedSlotCard && (
+            <GameCard key={`dragged-${draggedSlotCard.uid}`} card={draggedSlotCard} isDragging={true} craftPct={0} craftRemaining={0} onMouseDown={() => {}} />
+          )}
+
+          {/* Craft Button under cauldron - crafts directly when ingredients match recipe */}
+          {!draggingCauldron && assets.find(a => a.id === "crafting_cauldron_top") && (
+            <button
+              onClick={() => {
+                if (canCraft) {
+                  handleCauldronCraft();
+                } else {
+                  toast("Ingredients don't match any recipe!");
+                }
+              }}
+              disabled={!canCraft}
+              style={{
+                position: "absolute",
+                left: assets.find(a => a.id === "crafting_cauldron_top").x + (CARD_W * 1) / 2 - 40,
+                top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 + 10,
+                width: 80,
+                padding: "6px 10px",
+                fontSize: 11,
+                fontWeight: 800,
+                background: canCraft ? "linear-gradient(160deg, #7bc244, #4a9010)" : "linear-gradient(160deg, #6a3c8a, #4a2a6a)",
+                color: "#fff",
+                border: "2px solid #fff",
+                borderRadius: 6,
+                cursor: canCraft ? "pointer" : "not-allowed",
+                boxShadow: canCraft ? "0 3px 8px #0004" : "none",
+                zIndex: 100,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                opacity: canCraft ? 1 : 0.5
+              }}
+            >
+              🔥 Craft
+            </button>
+          )}
+
           <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.38)", pointerEvents: "none", fontStyle: "italic" }}>
-            Przeciągnij karty na siebie, by craftować • Kup pakiety u góry
+            Drag cards onto cauldron to craft • Kup pakiety u góry
           </div>
+
+          {/* Recipe dropdown over cauldron */}
+          {!draggingCauldron && selectedRecipe && (
+            <div
+              onClick={(e) => { e.stopPropagation(); setCauldronSlots(Array(9).fill(null)); setSelectedRecipe(null); toast("Recipe cancelled"); }}
+              style={{
+                position: "absolute",
+                left: 0, right: 0, top: 0, bottom: 0,
+                zIndex: 1000,
+                cursor: "default"
+              }}
+            />
+          )}
+          {!draggingCauldron && (
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+            position: "absolute",
+            left: assets.find(a => a.id === "crafting_cauldron_top")?.x + 10,
+            top: assets.find(a => a.id === "crafting_cauldron_top")?.y - 50,
+            zIndex: 200,
+            background: "rgba(248,242,220,0.95)",
+            border: "2px solid #c8a86b",
+            borderRadius: 6,
+            padding: "4px 8px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6
+          }}>
+            <span style={{ fontSize: 9, fontWeight: 700, color: "#7a5820" }}>RECIPE:</span>
+            <select
+              value={selectedRecipe || ""}
+              onChange={(e) => setSelectedRecipe(e.target.value || null)}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                padding: "3px 6px",
+                fontSize: 10,
+                fontFamily: "'Nunito', sans-serif",
+                fontWeight: 600,
+                background: "#fff",
+                border: "1px solid #c8a86b",
+                borderRadius: 4,
+                color: "#3a2808",
+                cursor: "pointer"
+              }}
+            >
+              <option value="">-- Any Recipe --</option>
+              {CRAFTING_RECIPES.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+          )}
         </div>
       </div>
       <RecipeBook />
@@ -459,17 +1010,19 @@ function GameWrapper() {
     async function fetchAllData() {
       try {
         console.log("1. Próba fetchowania plików...");
-        const [questsRes, cardsRes, assetsRes, recipesRes] = await Promise.all([
+        const [questsRes, cardsRes, assetsRes, recipesRes, craftingRes] = await Promise.all([
           fetch('quests.json'),
           fetch('cards.yaml'),
           fetch('assets.yaml'),
-          fetch('recipes.csv')
+          fetch('recipes.csv'),
+          fetch('crafting_recipes.csv')
         ]);
         console.log("2. Pliki pobrane, sprawdzam statusy...");
         if (!questsRes.ok) throw new Error("Brak pliku quests.json");
         if (!cardsRes.ok) throw new Error("Brak pliku cards.yaml");
         if (!assetsRes.ok) throw new Error("Brak pliku assets.yaml");
         if (!recipesRes.ok) throw new Error("Brak pliku recipes.csv");
+        if (!craftingRes.ok) throw new Error("Brak pliku crafting_recipes.csv");
 
         QUESTS = await questsRes.json();
 
@@ -485,8 +1038,8 @@ function GameWrapper() {
         }
 
         // Load assets from assets.yaml
-        const assetsText = await assetsRes.text();
-        const assetsObj = jsyaml.load(assetsText);
+        const assetsText2 = await assetsRes.text();
+        const assetsObj = jsyaml.load(assetsText2);
         console.log("4. Assets sparsowane:", assetsObj);
         if (Array.isArray(assetsObj)) {
           assetsObj.forEach(a => { CARD_DEFS[a.id] = a; });
@@ -495,6 +1048,7 @@ function GameWrapper() {
           if (assetsObj.packs) assetsObj.packs.forEach(p => { PACK_DEFS[p.id] = p; });
         }
 
+        // Load simple recipes from recipes.csv
         const csvText = await recipesRes.text();
         Papa.parse(csvText, {
           header: true,
@@ -509,6 +1063,17 @@ function GameWrapper() {
                 out_b: String(r.output_b || "").trim(),
                 time: parseInt(r.time_seconds || 5)
               }));
+          }
+        });
+
+        // Load crafting recipes from crafting_recipes.csv (3x3 grid)
+        const craftingCsvText = await craftingRes.text();
+        Papa.parse(craftingCsvText, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (res) => {
+            CRAFTING_RECIPES = res.data.filter(r => r.id && r.name);
+            console.log("5. Crafting recipes sparsowane:", CRAFTING_RECIPES);
             setLoading(false);
           }
         });
