@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir /b I:\\\\projects\\\\test\\\\stackcards)",
+      "Bash(dir \"I:\\\\projects\\\\test\\\\stackcards\\\\special_assets\")"
+    ]
+  }
+}

@@ -5,6 +5,7 @@ const { useState, useEffect, useRef, useCallback } = window.React;
 
 // ─── DEBUG FLAGI ─────────────────────────────────────────────────────────────
 const DEBUG_CAULDRON_GRID = false; // Pokaż siatkę 3x3 na kociołku (tylko debug)
+const DEBUG_MAP_SELECTOR = true; // Pokaż selector map na górze ekranu (debug)
 
 // ─── ZMIENNE GLOBALNE NA DANE Z PLIKÓW ───────────────────────────────────────
 let CARD_DEFS = {};
@@ -12,6 +13,8 @@ let PACK_DEFS = {};
 let RECIPES = [];
 let QUESTS = [];
 let CRAFTING_RECIPES = []; // Nowe receptury 3x3 z crafting_recipes.csv
+let MAPS = {}; // Map definitions loaded from maps/*.json
+let CURRENT_MAP = null; // Currently loaded map data
 
 const TYPE_COLORS = {
   unit: "#4a90d9", resource: "#5aaa60", food: "#9b59b6",
@@ -26,6 +29,7 @@ const CARD_H = 460 / 2;
 let _uid = 1;
 const mkCard = (id, x, y) => ({ uid: _uid++, id, x, y });
 const mkAsset = (id, x, y, scale = 3) => ({ uid: _uid++, id, x, y, isAsset: true, scale });
+const mkSpAsset = (id, x, y, scale, file, logic) => ({ uid: _uid++, id, x, y, isAsset: true, scale, isSpecial: true, file, logic });
 
 function findRecipe(a, b) {
   return RECIPES.find(r => (r.a === a && r.b === b) || (r.a === b && r.b === a));
@@ -105,38 +109,23 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
   const isCauldronBottom = asset.id === "crafting_cauldron_bottom";
   const isCauldron = isCauldronTop || isCauldronBottom || asset.id === "alchemy_cauldron";
 
-  // Cauldron parts use fixed dimensions based on actual image sizes (scaled down 3x)
-  // The crafting grid (3x3) is centered within a 4x4 pixel art grid on the image
-  // Image: 524x515, each 4x4 cell = 131x128.75px, 3x3 grid starts at 0.5 cell offset
-  const CAULDRON_TOP_W = 524 / 3;  // ~174.67px (full image scaled)
-  const CAULDRON_TOP_H = 515 / 3;  // ~171.67px (full image scaled)
+  // Use geometry from CauldronLogic if available
+  const geometry = window.CauldronLogic?.geometry || {
+    CAULDRON_TOP_W: 524 / 3,
+    CAULDRON_TOP_H: 515 / 3,
+    GRID_OFFSET_X: (524 / 4) * 0.5 / 3,
+    GRID_OFFSET_Y: (515 / 4) * 0.5 / 3,
+    GRID_W: (524 / 4) * 3 / 3,
+    GRID_H: (515 / 4) * 3 / 3,
+    SLOT_W: ((524 / 4) * 3 / 3) / 3,
+    SLOT_H: ((515 / 4) * 3 / 3) / 3,
+  };
 
-  // Active crafting grid area (3x3 within 4x4 image grid)
-  const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;  // ~21.83px - left margin to 3x3 grid
-  const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;  // ~21.46px - top margin to 3x3 grid
-  const GRID_W = (524 / 4) * 3 / 3;  // ~131px - width of 3x3 grid area
-  const GRID_H = (515 / 4) * 3 / 3;  // ~128.75px - height of 3x3 grid area
+  const width = isCauldronTop ? geometry.CAULDRON_TOP_W : isCauldronBottom ? 420 / 3 : CARD_W * (asset.scale || 1);
+  const height = isCauldronTop ? geometry.CAULDRON_TOP_H : isCauldronBottom ? 103 / 3 : CARD_H * (asset.scale || 1);
 
-  // Individual slot dimensions within the 3x3 crafting grid
-  const SLOT_W = GRID_W / 3;  // ~43.67px
-  const SLOT_H = GRID_H / 3;  // ~42.92px
-
-  const width = isCauldronTop ? CAULDRON_TOP_W : isCauldronBottom ? 420 / 3 : CARD_W * (asset.scale || 1);
-  const height = isCauldronTop ? CAULDRON_TOP_H : isCauldronBottom ? 103 / 3 : CARD_H * (asset.scale || 1);
-
-  // Slot positions - pixel-perfect with NO gaps, centered within 4x4 image grid
-  // Positions are top-left corners of each slot in pixels (relative to container div)
-  const slotPositions = [
-    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y },                           // slot 0 (top-left)
-    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y },                  // slot 1 (top-center)
-    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y },              // slot 2 (top-right)
-    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y + SLOT_H },                  // slot 3 (middle-left)
-    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y + SLOT_H },         // slot 4 (center)
-    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y + SLOT_H },     // slot 5 (middle-right)
-    { x: GRID_OFFSET_X, y: GRID_OFFSET_Y + SLOT_H * 2 },              // slot 6 (bottom-left)
-    { x: GRID_OFFSET_X + SLOT_W, y: GRID_OFFSET_Y + SLOT_H * 2 },     // slot 7 (bottom-center)
-    { x: GRID_OFFSET_X + SLOT_W * 2, y: GRID_OFFSET_Y + SLOT_H * 2 }, // slot 8 (bottom-right)
-  ];
+  // Slot positions from CauldronLogic (relative to cauldron container)
+  const slotPositions = window.CauldronLogic?.getAllSlotPositions() || [];
 
   // Get recipe requirements if selected
   const recipe = selectedRecipe ? CRAFTING_RECIPES.find(r => r.id === selectedRecipe) : null;
@@ -144,7 +133,8 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
   return (
     <div
       onMouseDown={(e) => {
-        if (isCauldronBottom && onCauldronDragStart && cauldronSlots.every(s => s === null)) {
+        const canDrag = window.CauldronLogic ? window.CauldronLogic.canDragCauldron(cauldronSlots) : cauldronSlots.every(s => s === null);
+        if (isCauldronBottom && onCauldronDragStart && canDrag) {
           onCauldronDragStart(e);
         }
       }}
@@ -159,9 +149,9 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
         opacity: isCauldron ? 1 : 0.8,
-        pointerEvents: isCauldronTop ? "auto" : isCauldronBottom && cauldronSlots.every(s => s === null) ? "auto" : "none",
-        zIndex: isCauldronBottom ? 1 : 2,
-        cursor: isCauldronBottom && cauldronSlots.every(s => s === null) ? "grab" : "default"
+        pointerEvents: isCauldron ? "auto" : "none",
+        zIndex: isCauldronBottom ? 5 : 10,
+        cursor: isCauldronBottom && (window.CauldronLogic ? window.CauldronLogic.canDragCauldron(cauldronSlots) : cauldronSlots.every(s => s === null)) ? "grab" : "default"
       }}
     >
       {/* DEBUG: Show grid area boundary */}
@@ -169,10 +159,10 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
         <div
           style={{
             position: "absolute",
-            left: GRID_OFFSET_X,
-            top: GRID_OFFSET_Y,
-            width: GRID_W,
-            height: GRID_H,
+            left: geometry.GRID_OFFSET_X,
+            top: geometry.GRID_OFFSET_Y,
+            width: geometry.GRID_W,
+            height: geometry.GRID_H,
             border: "2px dashed #ff0000",
             background: "rgba(255, 0, 0, 0.1)",
             pointerEvents: "none",
@@ -210,14 +200,14 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
               position: "absolute",
               left: pos.x,
               top: pos.y,
-              width: SLOT_W,
-              height: SLOT_H,
+              width: pos.width || geometry.SLOT_W,
+              height: pos.height || geometry.SLOT_H,
               background: isHovered ? "rgba(58,158,253,0.4)" : isFilled ? "rgba(123,194,68,0.35)" : showRequirement ? "rgba(255,215,0,0.2)" : "transparent",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               cursor: card ? "grab" : "default",
-              pointerEvents: card ? "auto" : "none",
+              pointerEvents: isActive || card ? "auto" : "none",
               transition: "background 0.1s",
               userSelect: "none",
               opacity: isDraggingFromThisSlot ? 0.3 : 1
@@ -321,24 +311,82 @@ const useBackgroundMusic = (url) => {
 function Stacklands() {
   useBackgroundMusic('bg_soundtrack.mp3');
 
-  const [cards, setCards] = useState(() => [
-    mkCard("outer_disciple", 100, 110),
+  // State for map selection
+  const [selectedMapId, setSelectedMapId] = useState('starter_map');
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [loadedSpecialAssetFiles, setLoadedSpecialAssetFiles] = useState([]);
 
-    mkCard("outer_disciple", 280, 110),
-    mkCard("spirit_herb", 460, 110),
-    mkCard("cultivation_manual", 640, 100),
-    mkCard("alchemy_cauldron", 820, 120),
-    mkCard("sect_hall", 920, 120),
+  // Load special asset scripts dynamically from map data
+  useEffect(() => {
+    const map = MAPS[selectedMapId];
+    if (!map || !map.special_assets) return;
 
-    mkCard("demon_beast", 120, 110),
+    // Collect unique script files to load
+    const scriptFiles = [...new Set(map.special_assets.map(sa => sa.file).filter(Boolean))];
 
-  ]);
-  const [assets, setAssets] = useState(() => [
-    mkAsset("martial_arena", 1000, 200),
-    mkAsset("crafting_cauldron_top", 0, 200, 1),
-    mkAsset("crafting_cauldron_bottom", (524 - 420) / 2 / 3, 200 + 515 / 3 - 10, 1),
+    // Load each script file that hasn't been loaded yet
+    scriptFiles.forEach(file => {
+      if (!loadedSpecialAssetFiles.includes(file)) {
+        console.log('Loading special asset script:', file);
+        const script = document.createElement('script');
+        script.src = file;
+        script.type = 'text/babel';
+        script.onload = () => {
+          console.log('Loaded special asset script:', file);
+          setLoadedSpecialAssetFiles(prev => [...prev, file]);
+        };
+        script.onerror = () => {
+          console.error('Failed to load special asset script:', file);
+        };
+        document.body.appendChild(script);
+      }
+    });
+  }, [selectedMapId]);
 
-  ]);
+  // Initialize cards and assets from map data or fallback to hardcoded
+  const [cards, setCards] = useState(() => {
+    const map = MAPS[selectedMapId];
+    if (map && map.cards) {
+      setMapLoaded(true);
+      return map.cards.map(c => mkCard(c.id, c.x, c.y));
+    }
+    // Fallback to hardcoded
+    setMapLoaded(true);
+    return [
+      mkCard("outer_disciple", 100, 110),
+      mkCard("outer_disciple", 280, 110),
+      mkCard("spirit_herb", 460, 110),
+      mkCard("cultivation_manual", 640, 100),
+      mkCard("alchemy_cauldron", 820, 120),
+      mkCard("sect_hall", 920, 120),
+      mkCard("demon_beast", 120, 110),
+    ];
+  });
+
+  const [assets, setAssets] = useState(() => {
+    const map = MAPS[selectedMapId];
+    if (map) {
+      const result = [];
+      // Regular assets
+      if (map.assets) {
+        result.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 3)));
+      }
+      // Special assets
+      if (map.special_assets) {
+        result.push(...map.special_assets.map(sa =>
+          mkSpAsset(sa.id, sa.x, sa.y, sa.scale || 1, sa.file, sa.logic || null)
+        ));
+      }
+      return result;
+    }
+    // Fallback to hardcoded
+    return [
+      mkAsset("martial_arena", 1000, 200),
+      mkAsset("crafting_cauldron_top", 0, 200, 1),
+      mkAsset("crafting_cauldron_bottom", (524 - 420) / 2 / 3, 200 + 515 / 3 - 10, 1),
+    ];
+  });
+
   const [inventory, setInventory] = useState({});
   const [gold, setGold] = useState(15);
   const [food, setFood] = useState(12);
@@ -389,7 +437,15 @@ function Stacklands() {
     const br = boardRef.current.getBoundingClientRect();
     const mouseX = e.clientX - br.left;
     const mouseY = e.clientY - br.top;
-    setCauldronDragOffset({ x: mouseX - topAsset.x, y: mouseY - topAsset.y });
+
+    // Use CauldronLogic if available, otherwise fallback to inline
+    if (window.CauldronLogic) {
+      const offset = window.CauldronLogic.getCauldronDragOffset(mouseX, mouseY, topAsset.x, topAsset.y);
+      setCauldronDragOffset(offset);
+    } else {
+      setCauldronDragOffset({ x: mouseX - topAsset.x, y: mouseY - topAsset.y });
+    }
+
     setDraggingCauldron(true);
   }, [assets]);
 
@@ -428,31 +484,37 @@ function Stacklands() {
       // Check if hovering over cauldron slot
       const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
       if (cauldronAsset && draggedCard) {
-        const cx = cauldronAsset.x;
-        const cy = cauldronAsset.y;
-        const cw = 524 / 3;
-        const ch = 515 / 3;
+        let slotIndex = -1;
 
-        // Active crafting grid area (3x3 within 4x4 image grid)
-        const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
-        const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
-        const GRID_W = (524 / 4) * 3 / 3;
-        const GRID_H = (515 / 4) * 3 / 3;
-        const SLOT_W = GRID_W / 3;
-        const SLOT_H = GRID_H / 3;
-
-        if (nx >= cx && nx <= cx + cw && ny >= cy && ny <= cy + ch) {
-          const relativeX = nx - cx - GRID_OFFSET_X;
-          const relativeY = ny - cy - GRID_OFFSET_Y;
-          const slotX = Math.floor(relativeX / SLOT_W);
-          const slotY = Math.floor(relativeY / SLOT_H);
-          const slotIndex = slotY * 3 + slotX;
-
-          if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
-            setCauldronHoveredSlot(slotIndex);
-          } else {
-            setCauldronHoveredSlot(null);
+        // Use CauldronLogic if available, otherwise use inline fallback
+        if (window.CauldronLogic) {
+          if (window.CauldronLogic.isWithinCauldron(nx, ny, cauldronAsset.x, cauldronAsset.y)) {
+            slotIndex = window.CauldronLogic.getSlotIndexFromPosition(nx, ny, cauldronAsset.x, cauldronAsset.y);
           }
+        } else {
+          // Inline fallback geometry
+          const cx = cauldronAsset.x;
+          const cy = cauldronAsset.y;
+          const cw = 524 / 3;
+          const ch = 515 / 3;
+          const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
+          const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
+          const SLOT_W = ((524 / 4) * 3 / 3) / 3;
+          const SLOT_H = ((515 / 4) * 3 / 3) / 3;
+
+          if (nx >= cx && nx <= cx + cw && ny >= cy && ny <= cy + ch) {
+            const relativeX = nx - cx - GRID_OFFSET_X;
+            const relativeY = ny - cy - GRID_OFFSET_Y;
+            const slotX = Math.floor(relativeX / SLOT_W);
+            const slotY = Math.floor(relativeY / SLOT_H);
+            slotIndex = slotY * 3 + slotX;
+          }
+        }
+
+        console.log('Drag hover:', { nx, ny, cauldronX: cauldronAsset.x, cauldronY: cauldronAsset.y, slotIndex, inCauldron: slotIndex >= 0 });
+
+        if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
+          setCauldronHoveredSlot(slotIndex);
         } else {
           setCauldronHoveredSlot(null);
         }
@@ -463,49 +525,52 @@ function Stacklands() {
     const onUp = () => {
       const drag = dragRef.current; if (!drag) return;
       const movedUid = drag.uid;
-      const movedCard = draggedCard;
+
+      // Get card position BEFORE clearing drag state
+      const cardPos = cards.find(c => c.uid === movedUid);
+      const movedCard = draggedCard || cardPos;
+
       dragRef.current = null; setDragging(null); setDraggedCard(null);
       setCauldronHoveredSlot(null); // Clear hover on drop
 
       // Check if dropped on cauldron
       const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
-      if (cauldronAsset && movedCard) {
-        const cx = cauldronAsset.x;
-        const cy = cauldronAsset.y;
-        const cw = 524 / 3;
-        const ch = 515 / 3;
+      if (cauldronAsset && movedCard && cardPos) {
+        let slotIndex = -1;
 
-        // Active crafting grid area (3x3 within 4x4 image grid)
-        const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
-        const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
-        const GRID_W = (524 / 4) * 3 / 3;
-        const GRID_H = (515 / 4) * 3 / 3;
-        const SLOT_W = GRID_W / 3;
-        const SLOT_H = GRID_H / 3;
-
-        const cardPos = cards.find(c => c.uid === movedUid);
-
-        // Check if card is within cauldron bounds
-        if (cardPos &&
-            cardPos.x >= cx && cardPos.x <= cx + cw &&
-            cardPos.y >= cy && cardPos.y <= cy + ch) {
-
-          // Find which slot the card should go to based on position
-          const relativeX = cardPos.x - cx - GRID_OFFSET_X;
-          const relativeY = cardPos.y - cy - GRID_OFFSET_Y;
-          const slotX = Math.floor(relativeX / SLOT_W);
-          const slotY = Math.floor(relativeY / SLOT_H);
-          const slotIndex = slotY * 3 + slotX;
-
-          if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
-            // Add card to slot - remove from board
-            setCards(prev => prev.filter(c => c.uid !== movedUid));
-            const newSlots = [...cauldronSlots];
-            newSlots[slotIndex] = movedCard;
-            setCauldronSlots(newSlots);
-            toast(`Added ${CARD_DEFS[movedCard.id]?.name} to slot ${slotIndex}`);
-            return; // Don't process regular crafting
+        // Use CauldronLogic if available, otherwise use inline fallback
+        if (window.CauldronLogic) {
+          if (window.CauldronLogic.isWithinCauldron(cardPos.x, cardPos.y, cauldronAsset.x, cauldronAsset.y)) {
+            slotIndex = window.CauldronLogic.getSlotIndexFromPosition(cardPos.x, cardPos.y, cauldronAsset.x, cauldronAsset.y);
           }
+        } else {
+          // Inline fallback geometry
+          const cx = cauldronAsset.x;
+          const cy = cauldronAsset.y;
+          const cw = 524 / 3;
+          const ch = 515 / 3;
+          const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
+          const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
+          const SLOT_W = ((524 / 4) * 3 / 3) / 3;
+          const SLOT_H = ((515 / 4) * 3 / 3) / 3;
+
+          if (cardPos.x >= cx && cardPos.x <= cx + cw && cardPos.y >= cy && cardPos.y <= cy + ch) {
+            const relativeX = cardPos.x - cx - GRID_OFFSET_X;
+            const relativeY = cardPos.y - cy - GRID_OFFSET_Y;
+            const slotX = Math.floor(relativeX / SLOT_W);
+            const slotY = Math.floor(relativeY / SLOT_H);
+            slotIndex = slotY * 3 + slotX;
+          }
+        }
+
+        if (slotIndex >= 0 && slotIndex < 9 && !cauldronSlots[slotIndex]) {
+          // Add card to slot - remove from board
+          setCards(prev => prev.filter(c => c.uid !== movedUid));
+          const newSlots = [...cauldronSlots];
+          newSlots[slotIndex] = movedCard;
+          setCauldronSlots(newSlots);
+          toast(`Added ${CARD_DEFS[movedCard.id]?.name} to slot ${slotIndex}`);
+          return; // Don't process regular crafting
         }
       }
 
@@ -559,15 +624,21 @@ function Stacklands() {
       const cardInSlot = cauldronSlots[draggingFromSlot];
 
       if (cardInSlot && cauldronAsset) {
-        const cx = cauldronAsset.x;
-        const cy = cauldronAsset.y;
-        const cw = 524 / 3;
-        const ch = 515 / 3;
+        let insideCauldron = false;
 
-        // Check if dropped outside cauldron bounds
-        const outsideCauldron = mouseX < cx || mouseX > cx + cw || mouseY < cy || mouseY > cy + ch;
+        // Use CauldronLogic if available
+        if (window.CauldronLogic) {
+          insideCauldron = window.CauldronLogic.isWithinCauldron(mouseX, mouseY, cauldronAsset.x, cauldronAsset.y);
+        } else {
+          // Inline fallback
+          const cx = cauldronAsset.x;
+          const cy = cauldronAsset.y;
+          const cw = 524 / 3;
+          const ch = 515 / 3;
+          insideCauldron = mouseX >= cx && mouseX <= cx + cw && mouseY >= cy && mouseY <= cy + ch;
+        }
 
-        if (outsideCauldron) {
+        if (!insideCauldron) {
           // Remove card from slot and add to board at drop position
           const newCard = { ...cardInSlot, x: mouseX - CARD_W / 2, y: mouseY - CARD_H / 2 };
           setCards(prev => [...prev, newCard]);
@@ -597,7 +668,7 @@ function Stacklands() {
     };
   }, [draggingFromSlot, cauldronSlots, assets]);
 
-  // Cauldron drag handling
+  // Cauldron drag handling - using CauldronLogic
   useEffect(() => {
     const onCauldronMove = (e) => {
       if (!draggingCauldron) return;
@@ -611,6 +682,11 @@ function Stacklands() {
           return { ...a, x: newX, y: newY };
         }
         if (a.id === "crafting_cauldron_bottom") {
+          if (window.CauldronLogic) {
+            const positions = window.CauldronLogic.getCauldronDragPositions(newX, newY);
+            return { ...a, x: positions.bottom.x, y: positions.bottom.y };
+          }
+          // Fallback to inline calculation
           return { ...a, x: newX + (524 - 420) / 2 / 3, y: newY + 515 / 3 - 10 };
         }
         return a;
@@ -726,75 +802,87 @@ function Stacklands() {
     toast(`📦 Wylosowano nową kartę!`);
   };
 
-  const handleCauldronCraft = () => {
-    // Find matching recipe for current slot configuration
-    const activeSlots = [1, 3, 4, 5, 7];
-    const matchingRecipe = CRAFTING_RECIPES.find(recipe => {
-      for (let i of activeSlots) {
-        const inputKey = `input${Math.floor(i/3)}${i%3}`;
-        const requiredId = recipe[inputKey];
-        if (requiredId && (!cauldronSlots[i] || cauldronSlots[i].id !== requiredId)) {
-          return false;
+  // Load a map by name
+  const loadMap = (mapId) => {
+    const map = MAPS[mapId];
+    if (!map) {
+      toast(`❌ Map "${mapId}" not found!`);
+      return;
+    }
+
+    // Load special asset scripts first
+    if (map.special_assets) {
+      const scriptFiles = [...new Set(map.special_assets.map(sa => sa.file).filter(Boolean))];
+
+      scriptFiles.forEach(file => {
+        if (!loadedSpecialAssetFiles.includes(file)) {
+          console.log('Loading special asset script:', file);
+          const script = document.createElement('script');
+          script.src = file;
+          script.type = 'text/babel';
+          script.onload = () => {
+            console.log('Loaded special asset script:', file);
+            setLoadedSpecialAssetFiles(prev => [...prev, file]);
+          };
+          document.body.appendChild(script);
         }
+      });
+    }
+
+    // Clear current state
+    setCards([]);
+    setAssets([]);
+    setCauldronSlots(Array(9).fill(null));
+
+    // Load cards from map
+    if (map.cards) {
+      setCards(map.cards.map(c => mkCard(c.id, c.x, c.y)));
+    }
+
+    // Load assets and special assets from map
+    if (map.assets || map.special_assets) {
+      const newAssets = [];
+      if (map.assets) {
+        newAssets.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 3)));
       }
-      return true;
-    });
-
-    if (!matchingRecipe) {
-      toast("❌ Ingredients don't match any recipe!");
-      return;
+      if (map.special_assets) {
+        newAssets.push(...map.special_assets.map(sa =>
+          mkSpAsset(sa.id, sa.x, sa.y, sa.scale || 1, sa.file, sa.logic || null)
+        ));
+      }
+      setAssets(newAssets);
     }
 
-    // Get output
-    const output = matchingRecipe.output_perfect1;
-    if (!output) {
-      toast("❌ Invalid recipe output!");
-      return;
-    }
+    setSelectedMapId(mapId);
+    setMapLoaded(true);
+    toast(`🗺️ Loaded map: ${map.name || mapId}`);
+  };
 
-    // Remove ingredients from slots
-    const usedUids = new Set();
-    cauldronSlots.forEach(card => { if (card) usedUids.add(card.uid); });
-
-    // Find cauldron position for spawn
+  const handleCauldronCraft = () => {
+    // Use CauldronLogic from special_assets/cauldron.js
     const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
-    const spawnX = cauldronAsset ? cauldronAsset.x + 150 : 400;
-    const spawnY = cauldronAsset ? cauldronAsset.y + 200 : 300;
+    const result = window.CauldronLogic?.craft(cauldronSlots, CRAFTING_RECIPES, cauldronAsset);
+
+    if (!result || !result.success) {
+      toast(result?.error || "❌ Ingredients don't match any recipe!");
+      return;
+    }
 
     // Remove used cards and add product
     setCards(prev => {
-      const filtered = prev.filter(c => !usedUids.has(c.uid));
-      filtered.push(mkCard(output, spawnX, spawnY));
+      const filtered = prev.filter(c => !result.usedUids.includes(c.uid));
+      filtered.push(mkCard(result.output, result.spawnX, result.spawnY));
       return filtered;
     });
 
     // Clear slots
     setCauldronSlots(Array(9).fill(null));
 
-    toast(`✨ Crafted: ${CARD_DEFS[output]?.name || output}!`);
+    toast(`✨ Crafted: ${CARD_DEFS[result.output]?.name || result.output}!`);
   };
 
-  // Check if cauldron slots match ANY recipe
-  const canCraft = (() => {
-    const activeSlots = [1, 3, 4, 5, 7];
-    // Check if all active slots are filled
-    const allFilled = activeSlots.every(i => cauldronSlots[i] !== null);
-    if (!allFilled) return false;
-
-    // Check if any recipe matches
-    const matchingRecipe = CRAFTING_RECIPES.find(recipe => {
-      for (let i of activeSlots) {
-        const inputKey = `input${Math.floor(i/3)}${i%3}`;
-        const requiredId = recipe[inputKey];
-        if (requiredId && (!cauldronSlots[i] || cauldronSlots[i].id !== requiredId)) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    return !!matchingRecipe;
-  })();
+  // Check if cauldron slots match ANY recipe - using CauldronLogic
+  const canCraft = window.CauldronLogic?.canCraft(cauldronSlots, CRAFTING_RECIPES) || false;
 
   const allPackIds = Object.keys(PACK_DEFS);
   const totalSlots = Math.max(7, allPackIds.length + 4);
@@ -873,17 +961,14 @@ function Stacklands() {
               handleSlotDragStart={handleSlotDragStart}
               slotDragStarted={slotDragStarted}
               onSlotClick={(slotIndex) => {
-                const card = cauldronSlots[slotIndex];
-                if (card) {
-                  // Return card to board AWAY from cauldron (not on top of it)
-                  const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
-                  const spawnX = cauldronAsset ? cauldronAsset.x - 200 : 100;
-                  const spawnY = cauldronAsset ? cauldronAsset.y + 100 : 250;
-                  const returnedCard = { ...card, x: spawnX, y: spawnY };
+                // Use CauldronLogic for slot click handling
+                const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+                const result = window.CauldronLogic?.onSlotClick(slotIndex, cauldronSlots, cauldronAsset);
 
-                  setCards(prev => [...prev, returnedCard]);
+                if (result) {
+                  setCards(prev => [...prev, result.card]);
                   const newSlots = [...cauldronSlots];
-                  newSlots[slotIndex] = null;
+                  newSlots[result.slotIndex] = null;
                   setCauldronSlots(newSlots);
                   toast("Ingredient returned to board");
                 }
@@ -992,8 +1077,26 @@ function Stacklands() {
           )}
         </div>
       </div>
-      <RecipeBook />
       <Toasts list={toasts} />
+
+      {/* Map Selector - Bottom Right */}
+      {DEBUG_MAP_SELECTOR && (
+        <div style={{ position: "fixed", bottom: 20, right: 14, zIndex: 1000, background: "rgba(0,0,0,0.8)", padding: "10px 15px", borderRadius: 8, border: "2px solid #c8a86b" }}>
+          <div style={{ color: "#fff", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase" }}>🗺️ Map Selector</div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <select
+              value={selectedMapId}
+              onChange={(e) => loadMap(e.target.value)}
+              style={{ background: "#1a1a1a", color: "#f0d080", border: "1px solid #c8a86b", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+            >
+              {Object.keys(MAPS).map(mapId => (
+                <option key={mapId} value={mapId}>{MAPS[mapId]?.name || mapId}</option>
+              ))}
+            </select>
+            <span style={{ color: "#888", fontSize: 10 }}>Loaded: {mapLoaded ? selectedMapId : 'none'}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1010,6 +1113,29 @@ function GameWrapper() {
     async function fetchAllData() {
       try {
         console.log("1. Próba fetchowania plików...");
+
+        // Fetch maps registry first
+        let mapIds = ['starter_map']; // Default maps
+        try {
+          const mapsIndexRes = await fetch('maps/index.json');
+          if (mapsIndexRes.ok) {
+            const mapsIndex = await mapsIndexRes.json();
+            mapIds = mapsIndex.maps || mapIds;
+          }
+        } catch (e) {
+          console.log("No maps/index.json, using default maps");
+        }
+
+        // Fetch all maps
+        const mapPromises = mapIds.map(id => fetch(`maps/${id}.json`).then(r => r.ok ? r.json() : null));
+        const mapResults = await Promise.all(mapPromises);
+        mapResults.forEach((map, i) => {
+          if (map) {
+            MAPS[mapIds[i]] = map;
+            console.log(`Loaded map: ${mapIds[i]}`);
+          }
+        });
+
         const [questsRes, cardsRes, assetsRes, recipesRes, craftingRes] = await Promise.all([
           fetch('quests.json'),
           fetch('cards.yaml'),
@@ -1074,6 +1200,7 @@ function GameWrapper() {
           complete: (res) => {
             CRAFTING_RECIPES = res.data.filter(r => r.id && r.name);
             console.log("5. Crafting recipes sparsowane:", CRAFTING_RECIPES);
+            console.log("6. Loaded maps:", Object.keys(MAPS));
             setLoading(false);
           }
         });
