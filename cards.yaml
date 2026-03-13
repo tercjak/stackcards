@@ -73,14 +73,7 @@
     texture: "assets/sect_hall.png"
     tags: ["building", "sect"]
 
-  - id: "alchemy_cauldron"
-    name: "Alchemy Cauldron"
-    name_pl: "Kocioł Alchemiczny"
-    type: "building"
-    description: "Used to refine pills and elixirs."
-    llm_prompt: "Minimalist 2D game card icon of a chinese alchemy cauldron with faint spiritual smoke, flat vector line art, white background, Stacklands style"
-    texture: "assets/alchemy_cauldron.png"
-    tags: ["building", "alchemy"]
+
 
   - id: "demon_beast"
     name: "Demon Beast"
@@ -93,20 +86,55 @@
     attack: 5
     tags: ["enemy", "spirit_beast"]
 
-  - id: "martial_arena"
-    name: "Martial Arena"
-    name_pl: "Arena Walki"
-    type: "building"
-    description: "A stone circular fighting platform with yin-yang symbol for martial duels."
-    llm_prompt: "Minimalist 2D game card icon of wuxia martial arena courtyard, stone circular fighting platform with yin-yang symbol carved into center, flat vector line art, white background, Stacklands style"
-    texture: "assets/martial_arena.png"
-    tags: ["building", "sect", "combat"]
 
-  - id: "qi_stone"
-    name: "Qi Stone"
-    name_pl: "Kamień Qi"
-    type: "material"
-    description: "A crystallized stone of pure spiritual energy used in alchemy."
-    llm_prompt: "Minimalist 2D game card icon of a glowing light blue qi crystal stone with spiritual aura, diamond-like shape, flat vector line art, white background, Stacklands style"
-    texture: "assets/qi_stone.png"
-    tags: ["material", "spiritual", "alchemy_ingredient"]
+
+# ---Crafting (Pill Variants) ---
+  - id: "spirit_pill_p"
+    name: "Perfect Spirit Pill"
+    name_pl: "Doskonała Pigułka Qi"
+    type: "consumable"
+    llm_prompt: "Minimalist 2D game card icon of a brilliant golden alchemy pill, intense light aura, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_pill_p.png"
+    value: 15
+    tags: ["alchemy", "consumable"]
+
+  - id: "spirit_pill_a"
+    name: "Diluted Spirit Pill"
+    name_pl: "Rozcieńczona Pigułka Qi"
+    type: "consumable"
+    llm_prompt: "Minimalist 2D game card icon of a dull grey alchemy pill, cracked surface, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_pill_a.png"
+    value: 2
+    tags: ["alchemy", "consumable"]
+
+  - id: "spirit_pill_b"
+    name: "Burnt Pill Slag"
+    name_pl: "Spalona Pigułka"
+    type: "resource"
+    llm_prompt: "Minimalist 2D game card icon of a black lump of charcoal, faint smoke, flat vector line art, white background, Stacklands style"
+    texture: "assets/burnt_pill.png"
+    tags: ["waste"]
+
+# --- ULEPSZONE PIGUŁKI (Improved Pills) ---
+  - id: "imp_pill_p"
+    name: "Perfect Improved Pill"
+    name_pl: "Doskonała Ulepszona Pigułka"
+    type: "consumable"
+    llm_prompt: "Minimalist 2D game card icon, glowing violet pill, sparking energy, flat vector line art, white background, Stacklands style"
+    texture: "assets/imp_pill_p.png"
+
+# --- REZULTATY KOWALSTWA (Smithing Results) ---
+  - id: "spirit_sword_a"
+    name: "Dull Spirit Sword"
+    name_pl: "Stępiony Duchowy Miecz"
+    type: "weapon"
+    attack: 3
+    llm_prompt: "Minimalist 2D game card icon, chipped glowing sword, flat vector line art, white background, Stacklands style"
+    texture: "assets/spirit_sword_a.png"
+
+  - id: "broken_iron"
+    name: "Scrap Iron"
+    name_pl: "Złom"
+    type: "resource"
+    llm_prompt: "Minimalist 2D game card icon, twisted rusty metal pieces, flat vector line art, white background, Stacklands style"
+    texture: "assets/broken_iron.png"

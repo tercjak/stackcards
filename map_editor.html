@@ -93,6 +93,11 @@
       border-color: #c8a86b;
     }
 
+    .palette-item.cauldron-btn:hover {
+      background: rgba(200, 168, 107, 0.5);
+      border-color: #f0d080;
+    }
+
     .palette-item-icon {
       width: 40px;
       height: 40px;
@@ -196,9 +201,25 @@
       white-space: nowrap;
     }
 
+    /* Assets - no background/border, just the graphic */
+    .placed-item.item-asset {
+      background: transparent;
+      border: none;
+      padding: 0;
+      /* Dimensions set dynamically via style prop */
+      min-width: 50px;
+      min-height: 50px;
+    }
+
     .placed-item:hover {
       background: rgba(240, 208, 128, 0.95);
       z-index: 100;
+    }
+
+    /* Asset hover - show border only on hover */
+    .placed-item.item-asset:hover {
+      background: rgba(200, 168, 107, 0.3);
+      border: 2px dashed #f0d080;
     }
 
     .placed-item.selected {
@@ -207,12 +228,8 @@
     }
 
     .item-card {
-      width: 60px;
-      height: 80px;
-    }
-
-    .item-asset {
-      min-width: 100px;
+      width: 175px;   /* 350/2 - 1:1 with game */
+      height: 230px;  /* 460/2 - 1:1 with game */
     }
 
     .properties-panel {

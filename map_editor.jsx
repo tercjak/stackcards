@@ -8,20 +8,67 @@ let CARD_DEFS = {};
 let ASSET_DEFS = {};
 
 // ─── HELPER FUNCTIONS ────────────────────────────────────────────────────────
-const CARD_W = 60;  // Smaller for editor
-const CARD_H = 80;
+// Same dimensions as in game (1:1 scale)
+const CARD_W = 350 / 2;  // 175px
+const CARD_H = 460 / 2;  // 230px
+
+// Asset snap pairs - defines offset for snapping (x, y) relative to base asset
+// cauldron_bottom attaches to cauldron_top with this offset (from getCauldronDragPositions)
+// bottomOffsetX = (524 - 420) / 2 / 3 ≈ 17.33
+// bottomOffsetY = 515 / 3 - 10 ≈ 161.67
+const CAULDRON_BOTTOM_OFFSET = { x: 17.33, y: 161.67 };
+
+// IDs to filter out from palettes (shown as special buttons instead)
+const FILTERED_ASSET_IDS = ['crafting_cauldron_top', 'crafting_cauldron_bottom', 'alchemy_cauldron'];
 
 // ─── MAIN EDITOR COMPONENT ───────────────────────────────────────────────────
 function MapEditor() {
   // State
-  const [activeTab, setActiveTab] = useState('cards'); // 'cards' | 'assets' | 'special'
+  const [activeTab, setActiveTab] = useState('cards');
   const [placedItems, setPlacedItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [mapName, setMapName] = useState('new_map');
   const [draggedItem, setDraggedItem] = useState(null);
 
+  // For repositioning already placed items - use ref like in stacklands.jsx
+  const dragRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Handle mouse drag for repositioning placed items (same pattern as stacklands.jsx)
+  useEffect(() => {
+    const onMove = (e) => {
+      const drag = dragRef.current;
+      if (!drag || !canvasRef.current) return;
+
+      const rect = canvasRef.current.getBoundingClientRect();
+      const newX = e.clientX - rect.left - drag.ox;
+      const newY = e.clientY - rect.top - drag.oy;
+
+      setPlacedItems(prev => prev.map(item =>
+        item.uid === drag.uid ? { ...item, x: Math.round(newX), y: Math.round(newY) } : item
+      ));
+      setMousePos({ x: Math.round(e.clientX - rect.left), y: Math.round(e.clientY - rect.top) });
+    };
+
+    const onUp = () => {
+      const drag = dragRef.current;
+      if (drag) {
+        // Find the item to select it after drop
+        const item = placedItems.find(i => i.uid === drag.uid);
+        if (item) setSelectedItem(item);
+        dragRef.current = null;
+      }
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [placedItems]);
 
   // Load card and asset definitions on mount
   useEffect(() => {
@@ -40,12 +87,17 @@ function MapEditor() {
 
         const assetsText = await assetsRes.text();
         const assetsObj = jsyaml.load(assetsText);
+        // Handle both array format and object with categories
         if (Array.isArray(assetsObj)) {
           assetsObj.forEach(a => { ASSET_DEFS[a.id] = a; });
+        } else if (assetsObj) {
+          if (assetsObj.buildings) assetsObj.buildings.forEach(a => { ASSET_DEFS[a.id] = a; });
+          if (assetsObj.packs) assetsObj.packs.forEach(p => { ASSET_DEFS[p.id] = p; });
         }
 
         console.log('Loaded cards:', Object.keys(CARD_DEFS).length);
         console.log('Loaded assets:', Object.keys(ASSET_DEFS).length);
+        console.log('Asset IDs:', Object.keys(ASSET_DEFS));
       } catch (err) {
         console.error('Error loading definitions:', err);
       }
@@ -65,8 +117,9 @@ function MapEditor() {
     if (!draggedItem) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left - CARD_W / 2;
-    const y = e.clientY - rect.top - CARD_H / 2;
+    const { width, height } = getItemDimensions(draggedItem);
+    const x = e.clientX - rect.left - width / 2;
+    const y = e.clientY - rect.top - height / 2;
 
     const newItem = {
       uid: Date.now(),
@@ -97,31 +150,16 @@ function MapEditor() {
     }
   };
 
-  // Handle placed item drag
-  const handleItemDragStart = (e, item) => {
+  // Handle placed item drag start (for repositioning) - same pattern as stacklands.jsx
+  const handleItemMouseDown = (e, item) => {
     e.stopPropagation();
     setSelectedItem(item);
     const rect = canvasRef.current.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left - item.x;
-    const offsetY = e.clientY - rect.top - item.y;
-    e.dataTransfer.setData('offsetX', offsetX);
-    e.dataTransfer.setData('offsetY', offsetY);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  // Handle item drop (reposition)
-  const handleItemDrop = (e, targetItem) => {
-    e.stopPropagation();
-    const rect = canvasRef.current.getBoundingClientRect();
-    const offsetX = parseFloat(e.dataTransfer.getData('offsetX'));
-    const offsetY = parseFloat(e.dataTransfer.getData('offsetY'));
-    const newX = Math.round(e.clientX - rect.left - offsetX);
-    const newY = Math.round(e.clientY - rect.top - offsetY);
-
-    setPlacedItems(prev => prev.map(item =>
-      item.uid === targetItem.uid ? { ...item, x: newX, y: newY } : item
-    ));
-    setSelectedItem(prev => prev ? { ...prev, x: newX, y: newY } : null);
+    dragRef.current = {
+      uid: item.uid,
+      ox: e.clientX - rect.left - item.x,
+      oy: e.clientY - rect.top - item.y
+    };
   };
 
   // Delete selected item
@@ -139,6 +177,31 @@ function MapEditor() {
       item.uid === selectedItem.uid ? { ...item, [field]: numValue } : item
     ));
     setSelectedItem(prev => prev ? { ...prev, [field]: numValue } : null);
+  };
+
+  // Add cauldron (both parts together)
+  const handleAddCauldron = () => {
+    const baseX = 200;
+    const baseY = 200;
+    const uid = Date.now();
+
+    // Use alchemy_cauldron - single merged asset
+    const alchemyCauldron = {
+      uid: uid,
+      id: 'alchemy_cauldron',
+      name: 'Alchemy Cauldron',
+      type: 'building',
+      isSpecial: true,
+      isAsset: true,
+      file: 'special_assets/cauldron.jsx',
+      logic: 'crafting',
+      scale: 1,
+      x: baseX,
+      y: baseY
+    };
+
+    setPlacedItems(prev => [...prev, alchemyCauldron]);
+    setSelectedItem(alchemyCauldron);
   };
 
   // Save map
@@ -204,26 +267,27 @@ function MapEditor() {
   // Get palette items
   const getPaletteItems = () => {
     if (activeTab === 'cards') {
-      return Object.values(CARD_DEFS).map(def => ({
-        id: def.id,
-        name: def.name || def.id,
-        type: def.type,
-        isCard: true
-      }));
+      return Object.values(CARD_DEFS)
+        .filter(def => def?.texture) // Only items with graphics
+        .map(def => ({
+          id: def.id,
+          name: def.name || def.id,
+          type: def.type,
+          isCard: true
+        }));
     } else if (activeTab === 'assets') {
-      return Object.values(ASSET_DEFS).map(def => ({
-        id: def.id,
-        name: def.name || def.id,
-        type: def.type,
-        isAsset: true,
-        scale: 1
-      }));
+      return Object.values(ASSET_DEFS)
+        .filter(def => def?.texture && !FILTERED_ASSET_IDS.includes(def.id)) // Only items with graphics, filter cauldrons
+        .map(def => ({
+          id: def.id,
+          name: def.name || def.id,
+          type: def.type,
+          isAsset: true,
+          scale: 1
+        }));
     } else {
-      // Special assets
-      return [
-        { id: 'crafting_cauldron_top', name: 'Crafting Cauldron Top', type: 'special', isSpecial: true, file: 'special_assets/cauldron.jsx', logic: 'crafting', scale: 1 },
-        { id: 'crafting_cauldron_bottom', name: 'Crafting Cauldron Bottom', type: 'special', isSpecial: true, file: 'special_assets/cauldron.jsx', scale: 1 }
-      ];
+      // Special assets - buttons for special placements
+      return [];
     }
   };
 
@@ -236,6 +300,30 @@ function MapEditor() {
     };
     return emojis[type] || '🃏';
   };
+
+  // Get texture URL for item
+  const getItemTexture = (item) => {
+    const def = item.isCard ? CARD_DEFS[item.id] : ASSET_DEFS[item.id];
+    return def?.texture || null;
+  };
+
+  // Get item dimensions (1:1 with game)
+  const getItemDimensions = (item) => {
+    if (item.isCard) {
+      return { width: CARD_W, height: CARD_H };
+    }
+    const scale = item.scale || 1;
+    return {
+      width: CARD_W * scale,
+      height: CARD_H * scale
+    };
+  };
+
+  // Get cauldron bottom position based on top position
+  const getCauldronBottomPos = (topX, topY) => ({
+    x: Math.round(topX + CAULDRON_BOTTOM_OFFSET.x),
+    y: Math.round(topY + CAULDRON_BOTTOM_OFFSET.y)
+  });
 
   const paletteItems = getPaletteItems();
 
@@ -276,22 +364,45 @@ function MapEditor() {
         </div>
 
         <div className="palette-content">
-          {paletteItems.map(item => (
+          {activeTab === 'special' && (
             <div
-              key={item.id}
-              className="palette-item"
-              draggable
-              onDragStart={(e) => handlePaletteDragStart(e, item)}
+              className="palette-item cauldron-btn"
+              onClick={handleAddCauldron}
+              style={{ cursor: 'pointer', background: 'rgba(200,168,107,0.3)', border: '2px dashed #c8a86b' }}
             >
               <div className="palette-item-icon">
-                {getTypeEmoji(item.type)}
+                <img src="assets/alchemy_cauldron.png" alt="Alchemy Cauldron" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               <div className="palette-item-info">
-                <div className="palette-item-name">{item.name}</div>
-                <div className="palette-item-type">{item.type} • {item.id}</div>
+                <div className="palette-item-name" style={{ fontSize: 12 }}>Alchemy Cauldron</div>
+                <div className="palette-item-type">Single merged cauldron asset</div>
               </div>
             </div>
-          ))}
+          )}
+          {paletteItems.map(item => {
+            const def = item.isCard ? CARD_DEFS[item.id] : ASSET_DEFS[item.id];
+            const texture = def?.texture;
+            return (
+              <div
+                key={item.id}
+                className="palette-item"
+                draggable
+                onDragStart={(e) => handlePaletteDragStart(e, item)}
+              >
+                <div className="palette-item-icon">
+                  {texture ? (
+                    <img src={texture} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  ) : (
+                    getTypeEmoji(item.type)
+                  )}
+                </div>
+                <div className="palette-item-info">
+                  <div className="palette-item-name">{item.name}</div>
+                  <div className="palette-item-type">{item.type} • {item.id}</div>
+                </div>
+              </div>
+            );
+          })}
           {paletteItems.length === 0 && (
             <div className="no-selection">Loading...</div>
           )}
@@ -316,45 +427,110 @@ function MapEditor() {
           onClick={handleCanvasClick}
         >
           {/* Placed items */}
-          {placedItems.map(item => (
-            <div
-              key={item.uid}
-              className={`placed-item ${item.isCard ? 'item-card' : 'item-asset'} ${selectedItem?.uid === item.uid ? 'selected' : ''}`}
-              style={{ left: item.x, top: item.y }}
-              draggable
-              onDragStart={(e) => handleItemDragStart(e, item)}
-              onDrop={(e) => handleItemDrop(e, item)}
-              onDragOver={(e) => e.preventDefault()}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedItem(item);
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 2 }}>
-                <span>{getTypeEmoji(item.type)}</span>
-                <span>{item.name}</span>
+          {placedItems.map(item => {
+            const def = item.isCard ? CARD_DEFS[item.id] : ASSET_DEFS[item.id];
+            const texture = def?.texture;
+            const { width, height } = getItemDimensions(item);
+            const isCard = item.isCard === true;
+            const isAsset = item.isAsset || item.isSpecial;
+            const isSelected = selectedItem?.uid === item.uid;
+
+            return (
+              <div
+                key={item.uid}
+                className={`placed-item ${isCard ? 'item-card' : 'item-asset'} ${isSelected ? 'selected' : ''}`}
+                style={{ left: item.x, top: item.y, width, height }}
+                onMouseDown={(e) => handleItemMouseDown(e, item)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedItem(item);
+                }}
+              >
+                {texture ? (
+                  <img
+                    src={texture}
+                    alt={item.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0, pointerEvents: 'none' }}
+                  />
+                ) : (
+                  <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'rgba(200,168,107,0.3)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 24
+                  }}>
+                    {getTypeEmoji(item.type)}
+                  </div>
+                )}
+
+                {/* Label overlay - cards always, assets only when selected */}
+                {isCard && (
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    background: 'rgba(0,0,0,0.75)',
+                    padding: 4,
+                    borderRadius: '0 0 4px 4px',
+                    fontSize: 9,
+                    color: '#fff'
+                  }}>
+                    <div style={{ fontWeight: 700, marginBottom: 2 }}>{item.name}</div>
+                    <div style={{ opacity: 0.7 }}>
+                      ({item.x}, {item.y})
+                    </div>
+                  </div>
+                )}
+
+                {/* Asset overlay - only when selected */}
+                {isAsset && isSelected && (
+                  <div style={{
+                    position: 'absolute', top: -20, left: 0, right: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    padding: 4,
+                    borderRadius: 4,
+                    fontSize: 9,
+                    color: '#fff',
+                    textAlign: 'center',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {item.name}: ({item.x}, {item.y}) {item.scale ? `• scale: ${item.scale}` : ''}
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: 9, opacity: 0.7 }}>
-                ({item.x}, {item.y})
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Drag preview */}
           {draggedItem && (
             <div
               className="placed-item"
               style={{
-                left: mousePos.x - CARD_W / 2,
-                top: mousePos.y - CARD_H / 2,
+                left: mousePos.x - getItemDimensions(draggedItem).width / 2,
+                top: mousePos.y - getItemDimensions(draggedItem).height / 2,
                 opacity: 0.7,
-                pointerEvents: 'none'
+                pointerEvents: 'none',
+                width: getItemDimensions(draggedItem).width,
+                height: getItemDimensions(draggedItem).height
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span>{getTypeEmoji(draggedItem.type)}</span>
-                <span>{draggedItem.name}</span>
-              </div>
+              {(() => {
+                const def = draggedItem.isCard ? CARD_DEFS[draggedItem.id] : ASSET_DEFS[draggedItem.id];
+                const texture = def?.texture;
+                if (texture) {
+                  return (
+                    <img
+                      src={texture}
+                      alt={draggedItem.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', position: 'absolute', inset: 0 }}
+                    />
+                  );
+                }
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 4 }}>
+                    <span>{getTypeEmoji(draggedItem.type)}</span>
+                    <span>{draggedItem.name}</span>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -392,6 +568,19 @@ function MapEditor() {
                 onChange={(e) => handlePositionChange('y', e.target.value)}
               />
             </div>
+            {selectedItem.isAsset && (
+              <div className="property-row">
+                <div className="property-label">Scale</div>
+                <input
+                  type="number"
+                  className="property-input"
+                  value={selectedItem.scale || 1}
+                  step="0.1"
+                  min="0.1"
+                  onChange={(e) => handlePositionChange('scale', parseFloat(e.target.value) || 1)}
+                />
+              </div>
+            )}
             {selectedItem.isSpecial && (
               <>
                 <div className="property-row">

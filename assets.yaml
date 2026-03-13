@@ -7,6 +7,14 @@
   texture: "assets/martial_arena4.png"
   tags: ["building", "sect", "combat"]
 
+- id: "alchemy_cauldron"
+  name: "Alchemy Cauldron"
+  name_pl: "Kocioł Alchemiczny"
+  type: "building"
+  description: "Used to refine pills and elixirs."
+  llm_prompt: "Minimalist 2D game card icon of a chinese alchemy cauldron with faint spiritual smoke, flat vector line art, white background, Stacklands style"
+  texture: "assets/alchemy_cauldron.png"
+  tags: ["building", "alchemy"]
 
 - id: "crafting_cauldron_top"
   name: "Alchemy Cauldron Top"
@@ -34,3 +42,5 @@
   hp: 25
   attack: 8
   tags: ["cultivator", "teacher", "elder"]
+
+

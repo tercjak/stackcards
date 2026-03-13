@@ -1,0 +1,24 @@
+{
+  "id": "2",
+  "name": "2",
+  "cards": [],
+  "assets": [],
+  "special_assets": [
+    {
+      "id": "crafting_cauldron_top",
+      "x": 200,
+      "y": 200,
+      "scale": 1,
+      "file": "special_assets/cauldron.jsx",
+      "logic": "crafting"
+    },
+    {
+      "id": "crafting_cauldron_bottom",
+      "x": 217,
+      "y": 362,
+      "scale": 1,
+      "file": "special_assets/cauldron.jsx",
+      "logic": "crafting"
+    }
+  ]
+}

@@ -22,8 +22,23 @@ są wbudowane bezpośrednio w plik HTML. **Nie wymaga Pythona ani serwera HTTP.*
 
 ## Jak uruchomić?
 
+```bash
 python -m http.server 8080
 # → otwórz http://localhost:8080
+```
+
+## 🗺️ Edytor Map
+
+```bash
+python server.py
+# → otwórz http://localhost:8080/map_editor.html
+```
+
+Edytor pozwala na:
+- Tworzenie nowych map
+- Przeciąganie kart i assetów na planszę
+- Edycję pozycji (x, y) i skali
+- Zapisywanie map do folderu `maps/`
 
 ### Generowanie Assetów (Opcjonalne)
 

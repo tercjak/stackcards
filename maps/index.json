@@ -1,3 +1,6 @@
 {
-  "maps": ["starter_map"]
+  "maps": [
+    "starter_map",
+    "2"
+  ]
 }
