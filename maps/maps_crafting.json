@@ -4,8 +4,63 @@
   "cards": [
     {
       "id": "spirit_herb",
-      "x": 383,
-      "y": 417
+      "x": 348,
+      "y": 402
+    },
+    {
+      "id": "cultivation_manual",
+      "x": 113,
+      "y": 396
+    },
+    {
+      "id": "qi_stone",
+      "x": 359,
+      "y": 764
+    },
+    {
+      "id": "cultivation_manual",
+      "x": 113,
+      "y": 429
+    },
+    {
+      "id": "cultivation_manual",
+      "x": 108,
+      "y": 477
+    },
+    {
+      "id": "spirit_herb",
+      "x": 348,
+      "y": 429
+    },
+    {
+      "id": "spirit_herb",
+      "x": 346,
+      "y": 459
+    },
+    {
+      "id": "qi_stone",
+      "x": 357,
+      "y": 803
+    },
+    {
+      "id": "qi_stone",
+      "x": 356,
+      "y": 844
+    },
+    {
+      "id": "qi_stone",
+      "x": 109,
+      "y": 733
+    },
+    {
+      "id": "qi_stone",
+      "x": 110,
+      "y": 767
+    },
+    {
+      "id": "qi_stone",
+      "x": 108,
+      "y": 802
     }
   ],
   "assets": [
@@ -31,8 +86,8 @@
   "special_assets": [
     {
       "id": "alchemy_cauldron",
-      "x": 1611,
-      "y": 905,
+      "x": 1566,
+      "y": 749,
       "scale": 1,
       "file": "special_assets/cauldron.jsx",
       "logic": "crafting"
