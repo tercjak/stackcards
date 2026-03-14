@@ -1,5 +1,20 @@
 [
   {
+    "id": "the_beginnings_are_hard",
+    "title": "The Beginnings Are Hard",
+    "title_pl": "Początki są trudne",
+    "description": "Learn alchemy from your Master. Craft a Spirit Pill under his guidance.",
+    "requirements": {
+      "spirit_pill": 1
+    },
+    "rewards": {
+      "gold": 50
+    },
+    "unlock_pack": null,
+    "is_main_quest": true,
+    "order": 0
+  },
+  {
     "id": "punch_a_tree",
     "title": "Punch a Tree",
     "title_pl": "Ściągnij drzewo",

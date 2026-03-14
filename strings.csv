@@ -1,0 +1,11 @@
+string_id,text
+dialog_spirit_pill_1,"Disciple, you must learn to refine Spirit Pills. The cauldron awaits."
+dialog_spirit_pill_2,"Yes, Master. I will do my best."
+dialog_spirit_pill_fail_1,"The herbs... they burned! I do not understand what went wrong."
+dialog_spirit_pill_fail_1_master,"Patience. Alchemy requires precise control of qi. Try again."
+dialog_spirit_pill_fail_2,"Master, I have failed again. The essence scattered..."
+dialog_spirit_pill_fail_2_master,"*sigh* The path of cultivation is long. Here, take this perfect pill and study it."
+dialog_spirit_pill_success,"This... this is a perfect Spirit Pill! Thank you, Master!"
+dialog_spirit_pill_success_master,"Remember: true mastery comes from understanding, not rushing. Now begin again."
+quest_beginnings_hard_title,"The Beginnings Are Hard"
+quest_beginnings_hard_desc,"Learn alchemy from your Master. Craft a Spirit Pill under his guidance."

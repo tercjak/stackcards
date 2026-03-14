@@ -66,8 +66,8 @@
   "assets": [
     {
       "id": "martial_arena",
-      "x": 666,
-      "y": -230,
+      "x": 665,
+      "y": -226,
       "scale": 4
     },
     {
@@ -80,6 +80,12 @@
       "id": "outer_disciple",
       "x": 649,
       "y": 653,
+      "scale": 1
+    },
+    {
+      "id": "maple_tree_red",
+      "x": 1514,
+      "y": 270,
       "scale": 1
     }
   ],

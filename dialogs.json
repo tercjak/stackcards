@@ -1,0 +1,25 @@
+[
+  {
+    "quest_id": "the_beginnings_are_hard",
+    "text_ids": [
+      "dialog_spirit_pill_1",
+      "dialog_spirit_pill_2",
+      "dialog_spirit_pill_fail_1",
+      "dialog_spirit_pill_fail_1_master",
+      "dialog_spirit_pill_fail_2",
+      "dialog_spirit_pill_fail_2_master",
+      "dialog_spirit_pill_success",
+      "dialog_spirit_pill_success_master"
+    ],
+    "asset_ids": [
+      "sifu_master",
+      "outer_disciple",
+      "outer_disciple",
+      "sifu_master",
+      "outer_disciple",
+      "sifu_master",
+      "outer_disciple",
+      "sifu_master"
+    ]
+  }
+]

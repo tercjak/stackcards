@@ -15,6 +15,8 @@ let QUESTS = [];
 let CRAFTING_RECIPES = []; // Nowe receptury 3x3 z crafting_recipes.csv
 let MAPS = {}; // Map definitions loaded from maps/*.json
 let CURRENT_MAP = null; // Currently loaded map data
+let STRINGS = {}; // Localization strings from strings.csv
+let DIALOGS = []; // Dialog definitions from dialogs.json
 
 const TYPE_COLORS = THEME.colors; // Use theme colors for type colors
 
@@ -265,6 +267,180 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
   );
 }
 
+// ─── DIALOG BOX (zaokrąglony czarny dymek nad assetem) ───────────────────────
+function DialogBox({ text, speakerId, targetX, targetY, onClick, speakerDef }) {
+  if (!text) return null;
+
+  // Box dimensions for centering
+  const boxWidth = 350;
+  const boxHeight = 150;
+
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        position: "fixed",
+        left: targetX || 400,
+        top: (targetY || 300) - 10,
+        transform: "translate(-50%, -100%)",
+        maxWidth: "400px",
+        width: "auto",
+        minWidth: "280px",
+        background: "rgba(0, 0, 0, 0.95)",
+        border: `3px solid ${THEME.colors.accent}`,
+        borderRadius: "20px",
+        padding: "16px 20px",
+        zIndex: THEME.zIndex.dialog || 1000,
+        cursor: "pointer",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+        animation: "dialogFadeIn 0.3s ease",
+        marginBottom: "10px"
+      }}
+    >
+      {/* Speaker name + icon */}
+      {speakerDef && (
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 12,
+          paddingBottom: 10,
+          borderBottom: `2px solid ${THEME.colors.accent}44`
+        }}>
+          <div style={{
+            width: 36,
+            height: 36,
+            background: THEME.colors.cardBg,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            border: `2px solid ${THEME.colors.accent}`,
+            flexShrink: 0
+          }}>
+            {speakerDef.texture ? (
+              <img src={speakerDef.texture} alt="" style={{ width: "80%", height: "80%", objectFit: "contain", borderRadius: "50%" }} />
+            ) : (
+              speakerDef.emoji || "?"
+            )}
+          </div>
+          <span style={{
+            color: THEME.colors.accent,
+            fontWeight: THEME.typography.weights.extrabold,
+            fontSize: THEME.typography.sizes.md,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            whiteSpace: "nowrap"
+          }}>
+            {speakerDef.name}
+          </span>
+        </div>
+      )}
+
+      {/* Dialog text */}
+      <p style={{
+        color: "#f5f0e0",
+        fontSize: THEME.typography.sizes.lg,
+        lineHeight: 1.5,
+        margin: 0,
+        fontFamily: THEME.typography.fontFamily
+      }}>
+        {text}
+      </p>
+
+      {/* Click hint */}
+      <div style={{
+        textAlign: "right",
+        fontSize: THEME.typography.sizes.xs,
+        color: "#777",
+        fontStyle: "italic",
+        marginTop: 12
+      }}>
+        Click to continue →
+      </div>
+    </div>
+  );
+}
+
+// ─── DIALOG MANAGER (obsługuje sekwencję dialogów z questu) ──────────────────
+function DialogManager({ activeQuestId, onComplete, assets, cards }) {
+  const [dialogIndex, setDialogIndex] = useState(0);
+  const [visible, setVisible] = useState(false);
+
+  // Find dialog config for active quest
+  const questDialog = DIALOGS?.find(d => d.quest_id === activeQuestId);
+
+  console.log('DialogManager: activeQuestId=', activeQuestId);
+  console.log('DialogManager: DIALOGS=', DIALOGS);
+  console.log('DialogManager: questDialog=', questDialog);
+  console.log('DialogManager: STRINGS=', STRINGS);
+
+  // Auto-show first dialog when quest activates
+  useEffect(() => {
+    if (activeQuestId && questDialog) {
+      setDialogIndex(0);
+      setVisible(true);
+    } else {
+      setVisible(false);
+    }
+  }, [activeQuestId]);
+
+  if (!questDialog || !visible) return null;
+
+  const currentTextId = questDialog.text_ids[dialogIndex];
+  const currentAssetId = questDialog.asset_ids[dialogIndex];
+
+  const text = STRINGS[currentTextId] || currentTextId;
+  const speakerDef = CARD_DEFS[currentAssetId];
+
+  const handleClick = () => {
+    const nextIndex = dialogIndex + 1;
+    if (nextIndex < questDialog.text_ids.length) {
+      setDialogIndex(nextIndex);
+    } else {
+      setVisible(false);
+      onComplete?.(activeQuestId);
+    }
+  };
+
+  // Find target asset/card position for rendering
+  let targetX = 400, targetY = 300;
+
+  // Check if target is an asset
+  const targetAsset = assets?.find(a => a.id === currentAssetId);
+  if (targetAsset) {
+    // Asset width depends on scale (scale 1 = CARD_W, scale 3 = CARD_W * 3)
+    const assetWidth = CARD_W * (targetAsset.scale || 1);
+    targetX = targetAsset.x + assetWidth / 2;
+    targetY = targetAsset.y;
+    console.log(`Dialog targeting asset: ${currentAssetId} at (${targetAsset.x}, ${targetAsset.y}), center X: ${targetX}`);
+  } else {
+    // Check if target is a card on board
+    const targetCard = cards?.find(c => c.id === currentAssetId);
+    if (targetCard) {
+      targetX = targetCard.x + CARD_W / 2;
+      targetY = targetCard.y;
+      console.log(`Dialog targeting card: ${currentAssetId} at (${targetCard.x}, ${targetCard.y})`);
+    } else {
+      console.log(`Dialog: target ${currentAssetId} NOT FOUND. Available assets:`, assets?.map(a => a.id));
+    }
+  }
+
+  return (
+    <DialogBox
+      text={text}
+      speakerId={currentAssetId}
+      speakerDef={speakerDef}
+      targetX={targetX}
+      targetY={targetY}
+      onClick={handleClick}
+      strings={STRINGS}
+      onClose={() => setVisible(false)}
+    />
+  );
+}
+
 function Toasts({ list }) {
   return (
     <div style={{ position: "fixed", bottom: THEME.spacing.lg, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", gap: THEME.spacing.sm, zIndex: THEME.zIndex.toast, pointerEvents: "none", alignItems: "center" }}>
@@ -341,9 +517,15 @@ function Stacklands() {
   useBackgroundMusic('bg_soundtrack.mp3');
 
   // State for map selection
-  const [selectedMapId, setSelectedMapId] = useState('starter_map');
+  const [selectedMapId, setSelectedMapId] = useState('maps_crafting'); // Default tutorial map
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loadedSpecialAssetFiles, setLoadedSpecialAssetFiles] = useState([]);
+
+  // Active quest state - tutorial quest starts active
+  const [activeQuestId, setActiveQuestId] = useState('the_beginnings_are_hard');
+
+  // XP system - track craft attempts per recipe
+  const [craftAttempts, setCraftAttempts] = useState({});
 
   // Load special asset scripts dynamically from map data
   useEffect(() => {
@@ -856,17 +1038,52 @@ function Stacklands() {
       return;
     }
 
+    // XP system - determine output quality based on attempts for this recipe
+    const recipeId = result.recipeId;
+    const attempts = (craftAttempts[recipeId] || 0) + 1;
+
+    // Update attempt counter
+    setCraftAttempts(prev => ({
+      ...prev,
+      [recipeId]: attempts
+    }));
+
+    // Find the recipe to get quality-based outputs
+    const recipe = CRAFTING_RECIPES.find(r => r.id === recipeId);
+
+    // Determine output based on attempt count (XP)
+    // 1st attempt: output_bad (failure/poor quality)
+    // 2nd attempt: output_avg1 (average quality)
+    // 3rd+ attempt: output_perfect1 (perfect quality)
+    let finalOutput = result.output; // Default fallback
+
+    if (recipe) {
+      if (attempts === 1) {
+        // First attempt - bad quality
+        finalOutput = recipe.output_bad || recipe.output_avg2 || result.output;
+        toast(`⚠ First attempt... ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
+      } else if (attempts === 2) {
+        // Second attempt - average/great quality
+        finalOutput = recipe.output_great1 || recipe.output_avg1 || result.output;
+        toast(`✨ Better! ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
+      } else {
+        // Third+ attempt - perfect quality
+        finalOutput = recipe.output_perfect1 || result.output;
+        toast(`🌟 Perfect! ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
+      }
+    }
+
     // Remove used cards and add product
     setCards(prev => {
       const filtered = prev.filter(c => !result.usedUids.includes(c.uid));
-      filtered.push(mkCard(result.output, result.spawnX, result.spawnY));
+      filtered.push(mkCard(finalOutput, result.spawnX, result.spawnY));
       return filtered;
     });
 
     // Clear slots
     setCauldronSlots(Array(9).fill(null));
 
-    toast(`✨ Crafted: ${CARD_DEFS[result.output]?.name || result.output}!`);
+    toast(`✨ Crafted: ${CARD_DEFS[finalOutput]?.name || finalOutput}! (Attempt #${attempts})`);
   };
 
   // Check if cauldron slots match ANY recipe - using CauldronLogic
@@ -1041,6 +1258,15 @@ function Stacklands() {
         </div>
       </div>
       <Toasts list={toasts} />
+      <DialogManager
+        activeQuestId={activeQuestId}
+        onComplete={(questId) => {
+          console.log('Quest completed:', questId);
+          setActiveQuestId(null);
+        }}
+        assets={assets}
+        cards={cards}
+      />
 
       {/* Style Selector - Bottom Right (above Map Selector) */}
       {DEBUG_MAP_SELECTOR && (
@@ -1096,7 +1322,7 @@ function GameWrapper() {
         console.log("1. Próba fetchowania plików...");
 
         // Fetch maps registry first
-        let mapIds = ['starter_map']; // Default maps
+        let mapIds = ['maps_crafting']; // Default map - tutorial map
         try {
           const mapsIndexRes = await fetch('maps/index.json');
           if (mapsIndexRes.ok) {
@@ -1116,6 +1342,36 @@ function GameWrapper() {
             console.log(`Loaded map: ${mapIds[i]}`);
           }
         });
+
+        // Load strings.csv and dialogs.json first
+        try {
+          const stringsRes = await fetch('strings.csv');
+          if (stringsRes.ok) {
+            const stringsText = await stringsRes.text();
+            Papa.parse(stringsText, {
+              header: true,
+              skipEmptyLines: true,
+              complete: (res) => {
+                res.data.forEach(row => {
+                  STRINGS[row.string_id] = row.text;
+                });
+                console.log("Loaded strings.csv:", Object.keys(STRINGS).length, "entries");
+              }
+            });
+          }
+        } catch (e) {
+          console.log("No strings.csv, skipping localization");
+        }
+
+        try {
+          const dialogsRes = await fetch('dialogs.json');
+          if (dialogsRes.ok) {
+            DIALOGS = await dialogsRes.json();
+            console.log("Loaded dialogs.json:", DIALOGS.length, "dialog sequences");
+          }
+        } catch (e) {
+          console.log("No dialogs.json, skipping dialogs");
+        }
 
         const [questsRes, cardsRes, assetsRes, recipesRes, craftingRes] = await Promise.all([
           fetch('quests.json'),
