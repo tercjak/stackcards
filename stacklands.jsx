@@ -158,6 +158,7 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
 
   return (
     <div
+      data-asset-id={asset.id}
       onMouseDown={(e) => {
         const canDrag = window.CauldronLogic ? window.CauldronLogic.canDragCauldron(cauldronSlots) : cauldronSlots.every(s => s === null);
         if (isCauldronBottom && onCauldronDragStart && canDrag) {
@@ -460,13 +461,13 @@ function Stacklands() {
     const mouseX = e.clientX - br.left;
     const mouseY = e.clientY - br.top;
 
-    // Use CauldronLogic if available, otherwise fallback to inline
-    if (window.CauldronLogic) {
-      const offset = window.CauldronLogic.getCauldronDragOffset(mouseX, mouseY, topAsset.x, topAsset.y);
-      setCauldronDragOffset(offset);
-    } else {
-      setCauldronDragOffset({ x: mouseX - topAsset.x, y: mouseY - topAsset.y });
-    }
+    // Offset is always relative to top part - this ensures the cauldron moves
+    // as a unit regardless of which part you click
+    const offset = {
+      x: mouseX - topAsset.x,
+      y: mouseY - topAsset.y
+    };
+    setCauldronDragOffset(offset);
 
     setDraggingCauldron(true);
   }, [assets]);
@@ -919,7 +920,7 @@ function Stacklands() {
             <GameCard key={`dragged-${draggedSlotCard.uid}`} card={draggedSlotCard} isDragging={true} craftPct={0} craftRemaining={0} onMouseDown={() => {}} />
           )}
 
-          {/* Craft Button under cauldron - crafts directly when ingredients match recipe */}
+          {/* Craft Button under cauldron - Material Design 3 style */}
           {!draggingCauldron && assets.find(a => a.id === "crafting_cauldron_top") && (
             <button
               onClick={() => {
@@ -935,18 +936,21 @@ function Stacklands() {
                 left: assets.find(a => a.id === "crafting_cauldron_top").x + (CARD_W * 1) / 2 - 40,
                 top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 + 10,
                 width: 80,
-                padding: "6px 10px",
-                fontSize: 11,
-                fontWeight: 800,
-                background: canCraft ? "linear-gradient(160deg, #7bc244, #4a9010)" : "linear-gradient(160deg, #6a3c8a, #4a2a6a)",
+                height: 36,
+                padding: "8px 16px",
+                fontSize: 12,
+                fontWeight: 600,
+                // MD3 Filled Button: enabled = primary (#006C4C green), disabled = on-surface opacity 38%
+                background: canCraft ? "#006C4C" : "rgba(0,0,0,0.38)",
                 color: "#fff",
-                border: "2px solid #fff",
-                borderRadius: 6,
-                cursor: canCraft ? "pointer" : "not-allowed",
-                boxShadow: canCraft ? "0 3px 8px #0004" : "none",
+                border: "none",
+                borderRadius: 20,
+                cursor: canCraft ? "pointer" : "default",
+                boxShadow: canCraft ? "0 1px 3px rgba(0,0,0,0.3)" : "none",
                 zIndex: 100,
                 textTransform: "uppercase",
-                letterSpacing: "0.05em",
+                letterSpacing: "0.08em",
+                transition: "all 0.2s ease",
                 opacity: canCraft ? 1 : 0.5
               }}
             >
@@ -961,7 +965,7 @@ function Stacklands() {
           {/* Recipe dropdown over cauldron */}
           {!draggingCauldron && selectedRecipe && (
             <div
-              onClick={(e) => { e.stopPropagation(); setCauldronSlots(Array(9).fill(null)); setSelectedRecipe(null); toast("Recipe cancelled"); }}
+              onClick={(e) => { e.stopPropagation(); setSelectedRecipe(null); toast("Recipe view closed"); }}
               style={{
                 position: "absolute",
                 left: 0, right: 0, top: 0, bottom: 0,

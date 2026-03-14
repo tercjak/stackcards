@@ -8,11 +8,12 @@ window.CauldronLogic = {
   component: 'CauldronTop',
 
   // Active slots in the 3x3 grid (indices: 0-8)
-  // Layout: 0 1 2
-  //         3 4 5
-  //         6 7 8
-  // Active slots (cross pattern): 1 (top), 3 (left), 4 (center), 5 (right), 7 (bottom)
-  slots: [1, 3, 4, 5, 7],
+  // Layout matches numpad/phone keypad visual layout:
+  // Visual: 1 2 3    Code: 0 1 2
+  //         4 5 6          3 4 5
+  //         7 8 9          6 7 8
+  // All slots are active for crafting - matches recipe CSV columns input00-input22
+  slots: [0, 1, 2, 3, 4, 5, 6, 7, 8],
 
   // Slot geometry - matches crafting.md exactly
   geometry: {
@@ -66,25 +67,30 @@ window.CauldronLogic = {
 
   // Check if slots match a recipe
   checkRecipe: function(cauldronSlots, craftingRecipes) {
-    const activeSlots = this.slots;
-
-    // Check if all active slots are filled
-    const allFilled = activeSlots.every(i => cauldronSlots[i] !== null);
-    if (!allFilled) return null;
+    const activeSlots = this.slots; // [1, 3, 4, 5, 7]
 
     // Find matching recipe
     const matchingRecipe = craftingRecipes.find(recipe => {
+      let recipeMatch = true;
+
       for (let i of activeSlots) {
         const inputKey = `input${Math.floor(i/3)}${i%3}`;
         const requiredId = recipe[inputKey];
-        if (requiredId && (!cauldronSlots[i] || cauldronSlots[i].id !== requiredId)) {
-          return false;
+        const actualId = cauldronSlots[i]?.id || null;
+
+        // If recipe requires an item in this slot
+        if (requiredId && requiredId !== '') {
+          if (actualId !== requiredId) {
+            recipeMatch = false;
+            break;
+          }
         }
       }
-      return true;
+
+      return recipeMatch;
     });
 
-    return matchingRecipe;
+    return matchingRecipe || null;
   },
 
   // Check if crafting is possible
@@ -100,8 +106,8 @@ window.CauldronLogic = {
       return { success: false, error: "No matching recipe" };
     }
 
-    // Get output
-    const output = matchingRecipe.output_perfect1;
+    // Get output - try output_perfect1 first, fallback to output_perfect2
+    const output = matchingRecipe.output_perfect1 || matchingRecipe.output_perfect2;
     if (!output) {
       return { success: false, error: "Invalid recipe output" };
     }
@@ -110,10 +116,12 @@ window.CauldronLogic = {
     const spawnX = cauldronAsset ? cauldronAsset.x + 150 : 400;
     const spawnY = cauldronAsset ? cauldronAsset.y + 200 : 300;
 
-    // Collect UIDs of used cards
+    // Collect UIDs of ALL cards in slots (not just active slots)
     const usedUids = [];
     cauldronSlots.forEach(card => {
-      if (card) usedUids.push(card.uid);
+      if (card) {
+        usedUids.push(card.uid);
+      }
     });
 
     return {
