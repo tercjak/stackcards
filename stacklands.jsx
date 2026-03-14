@@ -16,14 +16,10 @@ let CRAFTING_RECIPES = []; // Nowe receptury 3x3 z crafting_recipes.csv
 let MAPS = {}; // Map definitions loaded from maps/*.json
 let CURRENT_MAP = null; // Currently loaded map data
 
-const TYPE_COLORS = {
-  unit: "#4a90d9", resource: "#5aaa60", food: "#9b59b6",
-  material: "#d4801a", building: "#c0392b", currency: "#d4ac0d",
-  weapon: "#7f8c8d", enemy: "#922b21",
-};
+const TYPE_COLORS = THEME.colors; // Use theme colors for type colors
 
-const CARD_W = 350 / 2;
-const CARD_H = 460 / 2;
+const CARD_W = THEME.card.width;
+const CARD_H = THEME.card.height;
 
 
 let _uid = 1;
@@ -73,7 +69,7 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
     );
   }
 
-  const typeColor = TYPE_COLORS[def.type] || "#888";
+  const typeColor = TYPE_COLORS[def.type] || THEME.colors.accent;
   const isEnemy = def.type === "enemy";
 
   return (
@@ -82,21 +78,21 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
       style={{
         position: "absolute", left: card.x, top: card.y,
         width: CARD_W, height: CARD_H, perspective: "600px",
-        zIndex: isDragging ? 500 : 10, cursor: isDragging ? "grabbing" : "grab", userSelect: "none",
+        zIndex: isDragging ? THEME.zIndex.cardDrag : THEME.zIndex.base, cursor: isDragging ? "grabbing" : "grab", userSelect: "none",
       }}
     >
       <div style={{
-        width: "100%", height: "100%", borderRadius: 12,
-        background: isEnemy ? "linear-gradient(160deg, #e8dac8 0%, #d4c0a8 100%)" : "linear-gradient(160deg, #fdf8ee 0%, #f0e8d0 100%)",
-        border: isDragging ? "3px solid #3a9efd" : `2px solid ${isEnemy ? "#9a7755" : "#c8a86b"}`,
-        boxShadow: isDragging ? "0 0 0 4px #3a9efd44, 0 20px 40px #0007, 0 8px 16px #0004" : "0 4px 12px #0003, 0 2px 4px #0002, inset 0 1px 0 #ffffffcc",
+        width: "100%", height: "100%", borderRadius: THEME.borderRadius.lg,
+        background: isEnemy ? `linear-gradient(160deg, ${THEME.colors.cardBgDark} 0%, #d4c0a8 100%)` : `linear-gradient(160deg, ${THEME.colors.cardBg} 0%, #f0e8d0 100%)`,
+        border: isDragging ? `3px solid ${THEME.colors.accent}` : `2px solid ${isEnemy ? THEME.colors.cardBorderEnemy : THEME.colors.cardBorder}`,
+        boxShadow: isDragging ? THEME.shadows.cardDrag : THEME.shadows.card,
         transform: isDragging ? "scale(1.08) rotate(-4deg) translateY(-8px)" : "scale(1) rotate(0deg) translateY(0px)",
-        transition: isDragging ? "transform 0.12s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.12s ease, border-color 0.1s" : "transform 0.18s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.18s ease, border-color 0.1s",
+        transition: isDragging ? `transform ${THEME.transitions.drag}, box-shadow ${THEME.transitions.drag}, border-color 0.1s` : `transform ${THEME.transitions.normal}, box-shadow ${THEME.transitions.normal}, border-color 0.1s`,
         overflow: "hidden", display: "flex", flexDirection: "column",
-        fontFamily: "'Nunito', 'Segoe UI', sans-serif", willChange: "transform",
+        fontFamily: THEME.typography.fontFamily, willChange: "transform",
       }}>
         <div style={{ height: 6, background: `linear-gradient(90deg, ${typeColor}, ${typeColor}aa)`, flexShrink: 0 }} />
-        <div style={{ textAlign: "center", fontSize: 9, fontWeight: 800, color: typeColor, letterSpacing: "0.1em", marginTop: 4, textTransform: "uppercase", opacity: 0.85 }}>{def.type}</div>
+        <div style={{ textAlign: "center", fontSize: THEME.typography.sizes.xs, fontWeight: THEME.typography.weights.extrabold, color: typeColor, letterSpacing: "0.1em", marginTop: 4, textTransform: "uppercase", opacity: 0.85 }}>{def.type}</div>
 
         {/* Obszar ładowania grafiki */}
         <div style={{
@@ -109,15 +105,15 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
           {!def.texture && (def.emoji || "❓")}
         </div>
 
-        <div style={{ textAlign: "center", fontSize: 13, fontWeight: 800, color: "#3a2808", padding: "0 8px 2px", lineHeight: 1.2 }}>{def.name}</div>
-        <div style={{ textAlign: "center", fontSize: 10, color: "#8a6030", padding: "0 6px 6px", fontStyle: "italic" }}>{def.name_pl}</div>
+        <div style={{ textAlign: "center", fontSize: THEME.typography.sizes.lg, fontWeight: THEME.typography.weights.extrabold, color: THEME.colors.textDark, padding: "0 8px 2px", lineHeight: 1.2 }}>{def.name}</div>
+        <div style={{ textAlign: "center", fontSize: THEME.typography.sizes.sm, color: "#8a6030", padding: "0 6px 6px", fontStyle: "italic" }}>{def.name_pl}</div>
 
         {craftPct !== undefined && (
           <>
-            <div style={{ margin: "0 8px", height: 6, background: "#e0d0b0", borderRadius: 3, overflow: "hidden", flexShrink: 0 }}>
-              <div style={{ height: "100%", width: `${craftPct * 100}%`, background: "linear-gradient(90deg, #7bc244, #4a9010)", transition: "width 0.08s linear", borderRadius: 3 }} />
+            <div style={{ margin: "0 8px", height: 6, background: THEME.colors.progressBg, borderRadius: THEME.borderRadius.sm, overflow: "hidden", flexShrink: 0 }}>
+              <div style={{ height: "100%", width: `${craftPct * 100}%`, background: `linear-gradient(90deg, ${THEME.colors.progressFill}, ${THEME.colors.progressFillDark})`, transition: "width 0.08s linear", borderRadius: THEME.borderRadius.sm }} />
             </div>
-            <div style={{ textAlign: "center", fontSize: 9, color: "#7a5820", padding: "3px 0 5px" }}>⚙ {Math.ceil(craftRemaining)}s</div>
+            <div style={{ textAlign: "center", fontSize: THEME.typography.sizes.xs, color: "#7a5820", padding: "3px 0 5px" }}>⚙ {Math.ceil(craftRemaining)}s</div>
           </>
         )}
         <div style={{ height: craftPct !== undefined ? 0 : 5, background: `linear-gradient(90deg, ${typeColor}44, ${typeColor}22)`, flexShrink: 0 }} />
@@ -229,7 +225,7 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
               top: pos.y,
               width: pos.width || geometry.SLOT_W,
               height: pos.height || geometry.SLOT_H,
-              background: isHovered ? "rgba(58,158,253,0.4)" : isFilled ? "rgba(123,194,68,0.35)" : showRequirement ? "rgba(255,215,0,0.2)" : "transparent",
+              background: isHovered ? THEME.colors.slotHover : isFilled ? THEME.colors.slotFilled : showRequirement ? THEME.colors.slotRequired : "transparent",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -265,9 +261,9 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
 
 function Toasts({ list }) {
   return (
-    <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", gap: 6, zIndex: 9000, pointerEvents: "none", alignItems: "center" }}>
+    <div style={{ position: "fixed", bottom: THEME.spacing.lg, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", gap: THEME.spacing.sm, zIndex: THEME.zIndex.toast, pointerEvents: "none", alignItems: "center" }}>
       {list.map(m => (
-        <div key={m.id} style={{ background: "rgba(248, 242, 220, 0.98)", border: "2px solid #c8a86b", borderRadius: 10, padding: "7px 20px", fontSize: 13, fontFamily: "'Nunito', sans-serif", fontWeight: 700, color: "#3a2808", boxShadow: "0 4px 16px #0006", animation: "toastIn 2.8s ease forwards", whiteSpace: "nowrap" }}>{m.text}</div>
+        <div key={m.id} style={{ background: THEME.colors.toastBg, border: `2px solid ${THEME.colors.accentBorder}`, borderRadius: THEME.borderRadius.lg, padding: "7px 20px", fontSize: THEME.typography.sizes.sm, fontFamily: THEME.typography.fontFamily, fontWeight: THEME.typography.weights.bold, color: THEME.colors.toastText, boxShadow: THEME.shadows.toast, animation: "toastIn 2.8s ease forwards", whiteSpace: "nowrap" }}>{m.text}</div>
       ))}
     </div>
   );
@@ -276,22 +272,22 @@ function Toasts({ list }) {
 function RecipeBook() {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ position: "fixed", bottom: 14, right: 14, zIndex: 600, fontFamily: "'Nunito',sans-serif" }}>
-      <button onClick={() => setOpen(o => !o)} style={{ background: "rgba(248,242,220,0.97)", border: "2px solid #c8a86b", borderRadius: 10, padding: "7px 16px", fontSize: 12, fontWeight: 800, color: "#3a2808", cursor: "pointer", boxShadow: "0 2px 10px #0004" }}>📖 Receptury {open ? "▲" : "▼"}</button>
+    <div style={{ position: "fixed", bottom: 14, right: 14, zIndex: THEME.zIndex.base + 50, fontFamily: THEME.typography.fontFamily }}>
+      <button onClick={() => setOpen(o => !o)} style={{ background: "rgba(248,242,220,0.97)", border: `2px solid ${THEME.colors.accentBorder}`, borderRadius: THEME.borderRadius.lg, padding: "7px 16px", fontSize: THEME.typography.sizes.sm, fontWeight: THEME.typography.weights.extrabold, color: THEME.colors.toastText, cursor: "pointer", boxShadow: THEME.shadows.button }}>📖 Receptury {open ? "▲" : "▼"}</button>
       {open && (
-        <div style={{ position: "absolute", bottom: "110%", right: 0, width: 280, background: "rgba(248,242,220,0.99)", border: "2px solid #c8a86b", borderRadius: 12, padding: "12px", boxShadow: "0 8px 30px #0008", maxHeight: 340, overflowY: "auto" }}>
-          <div style={{ fontWeight: 800, fontSize: 13, color: "#3a2808", marginBottom: 8 }}>📜 Wszystkie receptury</div>
+        <div style={{ position: "absolute", bottom: "110%", right: 0, width: 280, background: "rgba(248,242,220,0.99)", border: `2px solid ${THEME.colors.accentBorder}`, borderRadius: THEME.borderRadius.lg, padding: THEME.spacing.md, boxShadow: THEME.shadows.dropdown, maxHeight: 340, overflowY: "auto" }}>
+          <div style={{ fontWeight: THEME.typography.weights.extrabold, fontSize: THEME.typography.sizes.sm, color: THEME.colors.toastText, marginBottom: 8 }}>📜 Wszystkie receptury</div>
           {RECIPES.map((r, i) => {
             const a = CARD_DEFS[r.a], b = CARD_DEFS[r.b], out = CARD_DEFS[r.out];
             return (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#5a3810", padding: "4px 0", borderBottom: "1px solid #e8d8b8" }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: THEME.spacing.sm, fontSize: THEME.typography.sizes.sm, color: "#5a3810", padding: "4px 0", borderBottom: `1px solid ${THEME.colors.accent}8` }}>
                 <span style={{ fontSize: 18 }}>{a?.emoji || "🃏"}</span>
-                <span style={{ color: "#b09060", fontWeight: 700 }}>+</span>
+                <span style={{ color: THEME.colors.accentDim, fontWeight: THEME.typography.weights.bold }}>+</span>
                 <span style={{ fontSize: 18 }}>{b?.emoji || "🃏"}</span>
-                <span style={{ color: "#b09060", fontWeight: 700 }}>→</span>
+                <span style={{ color: THEME.colors.accentDim, fontWeight: THEME.typography.weights.bold }}>→</span>
                 <span style={{ fontSize: 18 }}>{out?.emoji || "🃏"}</span>
-                <span style={{ fontWeight: 700 }}>{out?.name}</span>
-                <span style={{ marginLeft: "auto", fontSize: 10, color: "#a08050" }}>{r.time}s</span>
+                <span style={{ fontWeight: THEME.typography.weights.bold }}>{out?.name}</span>
+                <span style={{ marginLeft: "auto", fontSize: THEME.typography.sizes.xs, color: "#a08050" }}>{r.time}s</span>
               </div>
             );
           })}
@@ -871,20 +867,20 @@ function Stacklands() {
 
 
   return (
-    <div style={{ width: "100vw", height: "100vh", fontFamily: "'Nunito','Segoe UI',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden", background: "#5a9040" }}>
+    <div style={{ width: "100vw", height: "100vh", fontFamily: THEME.typography.fontFamily, display: "flex", flexDirection: "column", overflow: "hidden", background: THEME.colors.board }}>
       {/* Środek Gry */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Stół (z ładnymi radialnymi gradientami) */}
         <div ref={boardRef} style={{
           flex: 1, position: "relative",
           background: `
-            radial-gradient(ellipse at 15% 25%, #8ab56040 0%, transparent 40%),
+            radial-gradient(ellipse at 15% 25%, ${THEME.colors.boardHighlight}40 0%, transparent 40%),
             radial-gradient(ellipse at 78% 68%, #4a803060 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 5%, #72b05040 0%, transparent 35%)
+            radial-gradient(ellipse at 50% 5%, ${THEME.colors.boardAccent}40 0%, transparent 35%)
           `,
           overflow: "hidden"
         }} onMouseDown={(e) => { if (e.target === boardRef.current) { setDragging(null); setHovered(null); } }}>
-          <div style={{ position: "absolute", inset: 10, border: "2px solid rgba(180,150,100,0.22)", borderRadius: 10, pointerEvents: "none", background: "rgba(200,180,140,0.06)" }} />
+          <div style={{ position: "absolute", inset: THEME.spacing.sm, border: `2px solid ${THEME.colors.accentBorder}22`, borderRadius: THEME.borderRadius.lg, pointerEvents: "none", background: THEME.colors.surfaceVariant }} />
           {assets.map(asset => (
             <GameAsset
               key={asset.uid}
@@ -937,18 +933,18 @@ function Stacklands() {
                 top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 - 10,
                 height: 40,
                 padding: "0 20px",
-                fontSize: 14,
-                fontWeight: 500,
+                fontSize: THEME.typography.sizes.lg,
+                fontWeight: THEME.typography.weights.medium,
                 // MD3 Filled Button: enabled = black, disabled = surface variant
-                background: canCraft ? "#000000" : "#E0E0E0",
-                color: canCraft ? "#FFFFFF" : "#000000",
+                background: canCraft ? THEME.colors.primary : THEME.colors.disabled,
+                color: canCraft ? THEME.colors.text : THEME.colors.textDark,
                 border: "none",
-                borderRadius: 20,
+                borderRadius: THEME.borderRadius.full,
                 cursor: canCraft ? "pointer" : "default",
-                boxShadow: canCraft ? "0 1px 3px rgba(0,0,0,0.3)" : "none",
-                zIndex: 100,
+                boxShadow: canCraft ? THEME.shadows.sm : "none",
+                zIndex: THEME.zIndex.base + 90,
                 letterSpacing: "0.1em",
-                transition: "all 0.2s ease",
+                transition: THEME.transitions.slow,
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
@@ -959,7 +955,7 @@ function Stacklands() {
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill={canCraft ? "#FFFFFF" : "#000000"}
+                fill={canCraft ? THEME.colors.text : THEME.colors.textDark}
                 style={{ width: 18, height: 18 }}
               >
                 <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C12 6.47 13.5.67 13.5.67zM8 14c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/>
@@ -968,7 +964,7 @@ function Stacklands() {
             </button>
           )}
 
-          <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, textAlign: "center", fontSize: 11, color: "rgba(255,255,255,0.38)", pointerEvents: "none", fontStyle: "italic" }}>
+          <div style={{ position: "absolute", bottom: THEME.spacing.sm, left: 0, right: 0, textAlign: "center", fontSize: THEME.typography.sizes.xs, color: THEME.colors.textMuted, pointerEvents: "none", fontStyle: "italic" }}>
             Drag cards onto cauldron to craft • Kup pakiety u góry
           </div>
 
@@ -979,7 +975,7 @@ function Stacklands() {
               style={{
                 position: "absolute",
                 left: 0, right: 0, top: 0, bottom: 0,
-                zIndex: 1000,
+                zIndex: THEME.zIndex.recipeOverlay,
                 cursor: "default"
               }}
             />
@@ -987,8 +983,9 @@ function Stacklands() {
           {!draggingCauldron && (() => {
             const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
             if (!cauldronAsset) return null;
-            const cauldronCenterX = cauldronAsset.x + (524 / 3) / 2;
-            const selectorWidth = 200;
+            const cauldronWidth = 524 / 3;
+            const cauldronCenterX = cauldronAsset.x + cauldronWidth / 2;
+            const selectorWidth = cauldronWidth;
             const selectorLeft = cauldronCenterX - selectorWidth / 2;
             return (
               <div
@@ -997,31 +994,32 @@ function Stacklands() {
                   position: "absolute",
                   left: selectorLeft,
                   top: cauldronAsset.y - 65,
-                  zIndex: 200,
-                  background: "rgba(0,0,0,0.8)",
-                  padding: "10px 15px",
-                  borderRadius: 8,
-                  border: "2px solid #c8a86b",
+                  zIndex: THEME.zIndex.dropdown,
+                  background: THEME.colors.dropdownBg,
+                  padding: `10px ${THEME.spacing.md}`,
+                  borderRadius: THEME.borderRadius.md,
+                  border: `2px solid ${THEME.colors.accentBorder}`,
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: THEME.spacing.sm,
                   justifyContent: "center"
                 }}
               >
-                <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Recipe:</span>
+                <span style={{ color: THEME.colors.dropdownText, fontSize: THEME.typography.sizes.xs, fontWeight: THEME.typography.weights.bold, textTransform: "uppercase" }}>   &nbsp; &nbsp; &nbsp;Recipe:</span>
                 <select
                   value={selectedRecipe || ""}
                   onChange={(e) => setSelectedRecipe(e.target.value || null)}
                   onClick={(e) => e.stopPropagation()}
                   style={{
-                    background: "#1a1a1a",
-                    color: "#f0d080",
-                    border: "1px solid #c8a86b",
-                    borderRadius: 4,
+                    background: THEME.colors.surface,
+                    color: THEME.colors.dropdownAccent,
+                    border: `1px solid ${THEME.colors.accentBorder}`,
+                    borderRadius: THEME.borderRadius.sm,
                     padding: "4px 8px",
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: "pointer"
+                    fontSize: THEME.typography.sizes.sm,
+                    fontWeight: THEME.typography.weights.semibold,
+                    cursor: "pointer",
+                    flexGrow: 1
                   }}
                 >
                   <option value="">-- Any Recipe --</option>
@@ -1038,19 +1036,19 @@ function Stacklands() {
 
       {/* Map Selector - Bottom Right */}
       {DEBUG_MAP_SELECTOR && (
-        <div style={{ position: "fixed", bottom: 20, right: 14, zIndex: 1000, background: "rgba(0,0,0,0.8)", padding: "10px 15px", borderRadius: 8, border: "2px solid #c8a86b" }}>
-          <div style={{ color: "#fff", fontSize: 11, fontWeight: 700, marginBottom: 6, textTransform: "uppercase" }}>🗺️ Map Selector</div>
-          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <div style={{ position: "fixed", bottom: THEME.spacing.lg, right: 14, zIndex: THEME.zIndex.mapSelector, background: THEME.colors.dropdownBg, padding: `10px ${THEME.spacing.md}`, borderRadius: THEME.borderRadius.md, border: `2px solid ${THEME.colors.accentBorder}` }}>
+          <div style={{ color: THEME.colors.dropdownText, fontSize: THEME.typography.sizes.xs, fontWeight: THEME.typography.weights.bold, marginBottom: 6, textTransform: "uppercase" }}>🗺️ Map Selector</div>
+          <div style={{ display: "flex", gap: THEME.spacing.sm, alignItems: "center" }}>
             <select
               value={selectedMapId}
               onChange={(e) => loadMap(e.target.value)}
-              style={{ background: "#1a1a1a", color: "#f0d080", border: "1px solid #c8a86b", borderRadius: 4, padding: "4px 8px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+              style={{ background: THEME.colors.surface, color: THEME.colors.dropdownAccent, border: `1px solid ${THEME.colors.accentBorder}`, borderRadius: THEME.borderRadius.sm, padding: "4px 8px", fontSize: THEME.typography.sizes.sm, fontWeight: THEME.typography.weights.semibold, cursor: "pointer" }}
             >
               {Object.keys(MAPS).map(mapId => (
                 <option key={mapId} value={mapId}>{MAPS[mapId]?.name || mapId}</option>
               ))}
             </select>
-            <span style={{ color: "#888", fontSize: 10 }}>Loaded: {mapLoaded ? selectedMapId : 'none'}</span>
+            <span style={{ color: "#888", fontSize: THEME.typography.sizes.xs }}>Loaded: {mapLoaded ? selectedMapId : 'none'}</span>
           </div>
         </div>
       )}
@@ -1171,7 +1169,7 @@ function GameWrapper() {
   }, []);
 
   if (error) return (
-    <div style={{ color: '#ff4444', padding: 30, background: '#fff', margin: 20, borderRadius: 10, fontFamily: "sans-serif" }}>
+    <div style={{ color: '#ff4444', padding: THEME.spacing.xxl, background: THEME.colors.text, borderRadius: THEME.borderRadius.lg, fontFamily: THEME.typography.fontFamily }}>
       <h2>Błąd podczas ładowania!</h2>
       <p>{error}</p>
       <p>Upewnij się, że używasz komendy <b>python -m http.server 8080</b> i pliki leżą we właściwym folderze.</p>
