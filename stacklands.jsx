@@ -414,13 +414,8 @@ function Stacklands() {
   });
 
   const [inventory, setInventory] = useState({});
-  const [gold, setGold] = useState(15);
-  const [food, setFood] = useState(12);
-  const [moon] = useState(5);
   const [draggingUid, setDragging] = useState(null);
   const [craftMap, setCraftMap] = useState({});
-  const [completedQuests, setDone] = useState([]);
-  const [unlockedPacks, setUnlocked] = useState(["humble_beginnings"]);
   const [toasts, setToasts] = useState([]);
   const [hovered, setHovered] = useState(null);
   const [cauldronSlots, setCauldronSlots] = useState(Array(9).fill(null)); // 3x3 grid
@@ -788,46 +783,6 @@ function Stacklands() {
     return () => clearInterval(tick);
   }, [toast]);
 
-  // Logika Questów
-  useEffect(() => {
-    QUESTS.forEach(q => {
-      if (completedQuests.includes(q.id)) return;
-      let done = false;
-      if (q.condition) {
-        if (q.condition.type === "card_count_on_board") {
-          done = cards.filter(c => c.id === q.condition.card_id).length >= q.condition.count;
-        } else if (q.condition.type === "proximity") {
-          done = cards.some(ca => ca.id === q.condition.target_a && cards.some(cb => cb.id === q.condition.target_b && ca.uid !== cb.uid && Math.sqrt((ca.x - cb.x) ** 2 + (ca.y - cb.y) ** 2) < (CARD_W * 1.2)));
-        }
-      } else if (q.requirements) {
-        done = Object.entries(q.requirements).every(([k, v]) => {
-          if (k === "villager_count") return cards.filter(c => c.id === "villager").length >= v;
-          if (k === "completed_quests") return completedQuests.length >= v;
-          return (inventory[k] || 0) >= v;
-        });
-      }
-      if (done) {
-        setDone(c => [...new Set([...c, q.id])]);
-        toast(`🎯 Quest: "${q.title_pl || q.title}" ukończony!`);
-        if (q.unlock_pack) { setUnlocked(u => [...new Set([...u, q.unlock_pack])]); toast(`📦 Odblokowano nowy pakiet!`); }
-        if (q.rewards?.gold) setGold(g => g + q.rewards.gold);
-      }
-    });
-  }, [cards, inventory, completedQuests, toast]);
-
-  const buyPack = (packId) => {
-    const pack = PACK_DEFS[packId]; if (!pack) return;
-    if (!unlockedPacks.includes(packId)) { toast("🔒 Pakiet zablokowany!"); return; }
-    if (gold < pack.cost) { toast("❌ Za mało złota!"); return; }
-    if (!pack.cards_pool?.length) { toast("🔮 Wkrótce!"); return; }
-
-    setGold(g => g - pack.cost);
-    const pool = pack.cards_pool;
-    const drawn = pool[Math.floor(Math.random() * pool.length)];
-    setCards(prev => [...prev, mkCard(drawn, 80 + Math.random() * 500, 80 + Math.random() * 300)]);
-    toast(`📦 Wylosowano nową kartę!`);
-  };
-
   // Load a map by name
   const loadMap = (mapId) => {
     const map = MAPS[mapId];
@@ -912,60 +867,11 @@ function Stacklands() {
   // Check if cauldron slots match ANY recipe - using CauldronLogic
   const canCraft = window.CauldronLogic?.canCraft(cauldronSlots, CRAFTING_RECIPES) || false;
 
-  const allPackIds = Object.keys(PACK_DEFS);
-  const totalSlots = Math.max(7, allPackIds.length + 4);
-  const packSlots = [...allPackIds, ...Array(totalSlots - allPackIds.length).fill(null)];
 
   return (
     <div style={{ width: "100vw", height: "100vh", fontFamily: "'Nunito','Segoe UI',sans-serif", display: "flex", flexDirection: "column", overflow: "hidden", background: "#5a9040" }}>
-      {/* Pasek Górny */}
-      <div style={{ height: 88, background: "rgba(0,0,0,0.40)", display: "flex", alignItems: "center", padding: "0 12px", gap: 7, flexShrink: 0, borderBottom: "2px solid rgba(0,0,0,0.3)" }}>
-        <div style={{ width: 62, height: 68, background: "rgba(0,0,0,0.45)", border: "2px solid rgba(255,255,255,0.12)", borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 10, fontWeight: 800, cursor: "pointer", gap: 2, flexShrink: 0 }}><span style={{ fontSize: 22 }}>💰</span><span>Sell</span></div>
-        <div style={{ width: 2, height: 54, background: "rgba(255,255,255,0.12)", margin: "0 3px", flexShrink: 0 }} />
-        {packSlots.map((packId, i) => {
-          const pack = packId ? PACK_DEFS[packId] : null;
-          const isUnlocked = packId && unlockedPacks.includes(packId);
-          const canAfford = pack && gold >= pack.cost;
-          const showReal = pack && isUnlocked;
-          return (
-            <div key={i} onClick={() => packId && buyPack(packId)} style={{ width: 72, height: 68, background: showReal ? canAfford ? "rgba(55,38,12,0.92)" : "rgba(30,18,4,0.8)" : "rgba(0,0,0,0.45)", border: `2px solid ${showReal ? (canAfford ? "#c8a86b" : "#6a4418") : "rgba(255,255,255,0.08)"}`, borderRadius: 8, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: showReal ? "pointer" : "default", opacity: showReal ? 1 : 0.4, padding: "4px 3px", gap: 2, transition: "all 0.15s", flexShrink: 0 }}>
-              {showReal ? (<><span style={{ fontSize: 9, color: "#f0d080", fontWeight: 800, textAlign: "center", lineHeight: 1.3, whiteSpace: "pre-line" }}>{pack.name.replace(" ", "\n")}</span><span style={{ fontSize: 11, color: canAfford ? "#ffd060" : "#a06030", fontWeight: 700 }}>🪙{pack.cost}</span></>) : <span style={{ fontSize: 20, color: "rgba(255,255,255,0.2)" }}>???</span>}
-            </div>
-          );
-        })}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-          <div style={{ background: "rgba(0,0,0,0.4)", border: "2px solid rgba(255,255,255,0.15)", borderRadius: 9, padding: "6px 14px", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", gap: 12, alignItems: "center" }}><span>🪙 {gold}</span><span style={{ opacity: 0.3 }}>|</span><span>❤ {food}/20</span></div>
-          <div style={{ background: "rgba(0,0,0,0.4)", border: "2px solid rgba(255,255,255,0.15)", borderRadius: 9, padding: "6px 14px", color: "#f0d080", fontSize: 13, fontWeight: 700 }}>🌙 Moon {moon}</div>
-        </div>
-      </div>
-
       {/* Środek Gry */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Lewy Panel Quests */}
-        <div style={{ width: 165, background: "rgba(248,242,220,0.97)", borderRight: "2px solid #c8a86b", display: "flex", flexDirection: "column", flexShrink: 0 }}>
-          <div style={{ display: "flex", borderBottom: "2px solid #c8a86b" }}>
-            {["Quests", "Ideas"].map((tab, i) => (
-              <div key={tab} style={{ flex: 1, padding: "8px 0", textAlign: "center", fontSize: 11, fontWeight: 800, color: i === 0 ? "#3a2808" : "#a08050", background: i === 0 ? "rgba(200,168,107,0.22)" : "transparent", borderRight: i === 0 ? "1px solid #c8a86b" : "none" }}>{tab}</div>
-            ))}
-          </div>
-          <div style={{ flex: 1, overflowY: "auto", padding: "10px 10px" }}>
-            {QUESTS.filter(q => !q.is_main_quest).sort((a, b) => a.order - b.order).map(q => {
-              const done = completedQuests.includes(q.id);
-              return (
-                <div key={q.id} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 8, fontSize: 11, color: done ? "#5a8828" : "#3a2808", fontWeight: 700 }}>
-                  <span style={{ flexShrink: 0, marginTop: 1, fontSize: 13 }}>{done ? "✓" : "☐"}</span><span style={{ lineHeight: 1.35 }}>{q.title_pl || q.title}</span>
-                </div>
-              );
-            })}
-          </div>
-          {hovered && CARD_DEFS[hovered] && (
-            <div style={{ borderTop: "2px solid #c8a86b", padding: "8px 10px", background: "rgba(200,168,107,0.18)", flexShrink: 0 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#3a2808", textTransform: "uppercase" }}>{CARD_DEFS[hovered].name_pl || CARD_DEFS[hovered].name}</div>
-              <div style={{ fontSize: 10, color: "#7a5820", marginTop: 2, lineHeight: 1.4 }}>{CARD_DEFS[hovered].description}</div>
-            </div>
-          )}
-        </div>
-
         {/* Stół (z ładnymi radialnymi gradientami) */}
         <div ref={boardRef} style={{
           flex: 1, position: "relative",
