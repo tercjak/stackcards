@@ -31,6 +31,31 @@ const mkCard = (id, x, y) => ({ uid: _uid++, id, x, y });
 const mkAsset = (id, x, y, scale = 3) => ({ uid: _uid++, id, x, y, isAsset: true, scale });
 const mkSpAsset = (id, x, y, scale, file, logic) => ({ uid: _uid++, id, x, y, isAsset: true, scale, isSpecial: true, file, logic });
 
+// Expand alchemy_cauldron special asset into top + bottom parts
+const expandSpecialAssets = (specialAssets) => {
+  const result = [];
+  for (const sa of specialAssets) {
+    if (sa.id === 'alchemy_cauldron') {
+      // Expand into two parts - bottom has offset relative to top
+      result.push({
+        ...sa,
+        id: 'crafting_cauldron_top',
+        x: sa.x,
+        y: sa.y + 200,
+      });
+      result.push({
+        ...sa,
+        id: 'crafting_cauldron_bottom',
+        x: sa.x + 17.33,
+        y: sa.y + 361.67 - 200,
+      });
+    } else {
+      result.push(sa);
+    }
+  }
+  return result;
+};
+
 function findRecipe(a, b) {
   return RECIPES.find(r => (r.a === a && r.b === b) || (r.a === b && r.b === a));
 }
@@ -371,9 +396,10 @@ function Stacklands() {
       if (map.assets) {
         result.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 3)));
       }
-      // Special assets
+      // Special assets - expand alchemy_cauldron into top + bottom parts
       if (map.special_assets) {
-        result.push(...map.special_assets.map(sa =>
+        const expanded = expandSpecialAssets(map.special_assets);
+        result.push(...expanded.map(sa =>
           mkSpAsset(sa.id, sa.x, sa.y, sa.scale || 1, sa.file, sa.logic || null)
         ));
       }
@@ -846,7 +872,9 @@ function Stacklands() {
         newAssets.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 1)));
       }
       if (map.special_assets) {
-        newAssets.push(...map.special_assets.map(sa =>
+        // Expand alchemy_cauldron into top + bottom parts
+        const expanded = expandSpecialAssets(map.special_assets);
+        newAssets.push(...expanded.map(sa =>
           mkSpAsset(sa.id, sa.x, sa.y, sa.scale || 1, sa.file, sa.logic || null)
         ));
       }
