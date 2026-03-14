@@ -13,10 +13,9 @@ const CARD_W = 350 / 2;  // 175px
 const CARD_H = 460 / 2;  // 230px
 
 // Asset snap pairs - defines offset for snapping (x, y) relative to base asset
-// cauldron_bottom attaches to cauldron_top with this offset (from getCauldronDragPositions)
-// bottomOffsetX = (524 - 420) / 2 / 3 ≈ 17.33
-// bottomOffsetY = 515 / 3 - 10 ≈ 161.67
-const CAULDRON_BOTTOM_OFFSET = { x: 17.33, y: 161.67 };
+// Both cauldron parts are 540px wide, so X offset = 0 (centered)
+// Y offset: top height (566/3=188.67) minus overlap (~13px) = 175.67
+const CAULDRON_BOTTOM_OFFSET = { x: 0, y: 176 };
 
 // IDs to filter out from palettes (shown as special buttons instead)
 const FILTERED_ASSET_IDS = ['crafting_cauldron_top', 'crafting_cauldron_bottom', 'alchemy_cauldron'];

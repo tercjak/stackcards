@@ -32,8 +32,9 @@ const expandSpecialAssets = (specialAssets) => {
   const result = [];
   for (const sa of specialAssets) {
     if (sa.id === 'alchemy_cauldron') {
-      // Expand into two parts - bottom attaches to top with offset (matching map_editor.jsx)
-      // Offset: x=17.33, y=161.67 (relative to top position)
+      // Expand into two parts - bottom attaches to top with offset
+      // Both parts are 540px wide, so X offset = 0 (centered)
+      // Y offset: top height (566/3=188.67) minus overlap (~13px) = 175.67
       result.push({
         ...sa,
         id: 'crafting_cauldron_top',
@@ -43,8 +44,8 @@ const expandSpecialAssets = (specialAssets) => {
       result.push({
         ...sa,
         id: 'crafting_cauldron_bottom',
-        x: sa.x + 17.33,
-        y: sa.y + 161.67,
+        x: sa.x,
+        y: sa.y + 176,
       });
     } else {
       result.push(sa);
@@ -83,8 +84,12 @@ function GameCard({ card, isDragging, craftPct, craftRemaining, onMouseDown }) {
     >
       <div style={{
         width: "100%", height: "100%", borderRadius: THEME.borderRadius.lg,
-        background: isEnemy ? `linear-gradient(160deg, ${THEME.colors.cardBgDark} 0%, #d4c0a8 100%)` : `linear-gradient(160deg, ${THEME.colors.cardBg} 0%, #f0e8d0 100%)`,
-        border: isDragging ? `3px solid ${THEME.colors.accent}` : `2px solid ${isEnemy ? THEME.colors.cardBorderEnemy : THEME.colors.cardBorder}`,
+        background: THEME.disableCardGradient
+          ? (isEnemy ? THEME.colors.cardBgDark : THEME.colors.cardBg)
+          : (isEnemy ? `linear-gradient(160deg, ${THEME.colors.cardBgDark} 0%, #d4c0a8 100%)` : `linear-gradient(160deg, ${THEME.colors.cardBg} 0%, #f0e8d0 100%)`),
+        border: THEME.thickCardBorder
+          ? `3px solid ${isEnemy ? THEME.colors.cardBorderEnemy : THEME.colors.cardBorder}`
+          : (isDragging ? `3px solid ${THEME.colors.accent}` : `2px solid ${isEnemy ? THEME.colors.cardBorderEnemy : THEME.colors.cardBorder}`),
         boxShadow: isDragging ? THEME.shadows.cardDrag : THEME.shadows.card,
         transform: isDragging ? "scale(1.08) rotate(-4deg) translateY(-8px)" : "scale(1) rotate(0deg) translateY(0px)",
         transition: isDragging ? `transform ${THEME.transitions.drag}, box-shadow ${THEME.transitions.drag}, border-color 0.1s` : `transform ${THEME.transitions.normal}, box-shadow ${THEME.transitions.normal}, border-color 0.1s`,
@@ -132,19 +137,20 @@ function GameAsset({ asset, selectedRecipe, cauldronSlots, onSlotClick, hoveredS
   const isCauldron = isCauldronTop || isCauldronBottom || asset.id === "alchemy_cauldron";
 
   // Use geometry from CauldronLogic if available
+  // Images have 8px padding for outline: top=540x566, bottom=540x134
   const geometry = window.CauldronLogic?.geometry || {
-    CAULDRON_TOP_W: 524 / 3,
-    CAULDRON_TOP_H: 515 / 3,
-    GRID_OFFSET_X: (524 / 4) * 0.5 / 3,
-    GRID_OFFSET_Y: (515 / 4) * 0.5 / 3,
-    GRID_W: (524 / 4) * 3 / 3,
-    GRID_H: (515 / 4) * 3 / 3,
-    SLOT_W: ((524 / 4) * 3 / 3) / 3,
-    SLOT_H: ((515 / 4) * 3 / 3) / 3,
+    CAULDRON_TOP_W: 540 / 3,   // ~180px (full image width scaled)
+    CAULDRON_TOP_H: 566 / 3,   // ~188.67px (full image height scaled)
+    GRID_OFFSET_X: 8/3 + (524 / 4) * 0.5 / 3,  // ~24.50px (padding + content offset)
+    GRID_OFFSET_Y: 8/3 + (515 / 4) * 0.5 / 3,  // ~24.12px (padding + content offset)
+    GRID_W: (524 / 4) * 3 / 3,                 // ~131px (content grid width)
+    GRID_H: (515 / 4) * 3 / 3,                 // ~128.75px (content grid height)
+    SLOT_W: ((524 / 4) * 3 / 3) / 3,           // ~43.67px (content slot width)
+    SLOT_H: ((515 / 4) * 3 / 3) / 3,           // ~42.92px (content slot height)
   };
 
-  const width = isCauldronTop ? geometry.CAULDRON_TOP_W : isCauldronBottom ? 420 / 3 : CARD_W * (asset.scale || 1);
-  const height = isCauldronTop ? geometry.CAULDRON_TOP_H : isCauldronBottom ? 103 / 3 : CARD_H * (asset.scale || 1);
+  const width = isCauldronTop ? geometry.CAULDRON_TOP_W : isCauldronBottom ? 540 / 3 : CARD_W * (asset.scale || 1);
+  const height = isCauldronTop ? geometry.CAULDRON_TOP_H : isCauldronBottom ? 134 / 3 : CARD_H * (asset.scale || 1);
 
   // Slot positions from CauldronLogic (relative to cauldron container)
   const slotPositions = window.CauldronLogic?.getAllSlotPositions() || [];
@@ -404,10 +410,11 @@ function Stacklands() {
       return result;
     }
     // Fallback to hardcoded
+    // Both parts 540px wide - X offset = 0, Y offset = 176 (566/3 - 13 overlap)
     return [
       mkAsset("martial_arena", 1000, 200),
       mkAsset("crafting_cauldron_top", 0, 200, 1),
-      mkAsset("crafting_cauldron_bottom", (524 - 420) / 2 / 3, 200 + 515 / 3 - 10, 1),
+      mkAsset("crafting_cauldron_bottom", 0, 200 + 176, 1),
     ];
   });
 
@@ -511,14 +518,14 @@ function Stacklands() {
             slotIndex = window.CauldronLogic.getSlotIndexFromPosition(nx, ny, cauldronAsset.x, cauldronAsset.y);
           }
         } else {
-          // Inline fallback geometry
+          // Inline fallback geometry - images have 8px padding: top=540x566, bottom=540x134
           const cx = cauldronAsset.x;
           const cy = cauldronAsset.y;
-          const cw = 524 / 3;
-          const ch = 515 / 3;
-          const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
-          const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
-          const SLOT_W = ((524 / 4) * 3 / 3) / 3;
+          const cw = 540 / 3;
+          const ch = 566 / 3;
+          const GRID_OFFSET_X = 8/3 + (524 / 4) * 0.5 / 3;  // padding + content offset
+          const GRID_OFFSET_Y = 8/3 + (515 / 4) * 0.5 / 3;
+          const SLOT_W = ((524 / 4) * 3 / 3) / 3;  // content slot width
           const SLOT_H = ((515 / 4) * 3 / 3) / 3;
 
           if (nx >= cx && nx <= cx + cw && ny >= cy && ny <= cy + ch) {
@@ -563,14 +570,14 @@ function Stacklands() {
             slotIndex = window.CauldronLogic.getSlotIndexFromPosition(cardPos.x, cardPos.y, cauldronAsset.x, cauldronAsset.y);
           }
         } else {
-          // Inline fallback geometry
+          // Inline fallback geometry - images have 8px padding: top=540x566, bottom=540x134
           const cx = cauldronAsset.x;
           const cy = cauldronAsset.y;
-          const cw = 524 / 3;
-          const ch = 515 / 3;
-          const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
-          const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
-          const SLOT_W = ((524 / 4) * 3 / 3) / 3;
+          const cw = 540 / 3;
+          const ch = 566 / 3;
+          const GRID_OFFSET_X = 8/3 + (524 / 4) * 0.5 / 3;  // padding + content offset
+          const GRID_OFFSET_Y = 8/3 + (515 / 4) * 0.5 / 3;
+          const SLOT_W = ((524 / 4) * 3 / 3) / 3;  // content slot width
           const SLOT_H = ((515 / 4) * 3 / 3) / 3;
 
           if (cardPos.x >= cx && cardPos.x <= cx + cw && cardPos.y >= cy && cardPos.y <= cy + ch) {
@@ -649,11 +656,11 @@ function Stacklands() {
         if (window.CauldronLogic) {
           insideCauldron = window.CauldronLogic.isWithinCauldron(mouseX, mouseY, cauldronAsset.x, cauldronAsset.y);
         } else {
-          // Inline fallback
+          // Inline fallback - images have 8px padding: top=540x566, bottom=540x134
           const cx = cauldronAsset.x;
           const cy = cauldronAsset.y;
-          const cw = 524 / 3;
-          const ch = 515 / 3;
+          const cw = 540 / 3;
+          const ch = 566 / 3;
           insideCauldron = mouseX >= cx && mouseX <= cx + cw && mouseY >= cy && mouseY <= cy + ch;
         }
 
@@ -705,8 +712,8 @@ function Stacklands() {
             const positions = window.CauldronLogic.getCauldronDragPositions(newX, newY);
             return { ...a, x: positions.bottom.x, y: positions.bottom.y };
           }
-          // Fallback to inline calculation
-          return { ...a, x: newX + (524 - 420) / 2 / 3, y: newY + 515 / 3 - 10 };
+          // Fallback to inline calculation - both parts 540px wide, no X offset
+          return { ...a, x: newX, y: newY + 566 / 3 - 13 };
         }
         return a;
       }));
@@ -935,27 +942,28 @@ function Stacklands() {
                 padding: "0 20px",
                 fontSize: THEME.typography.sizes.lg,
                 fontWeight: THEME.typography.weights.medium,
-                // MD3 Filled Button: enabled = black, disabled = surface variant
-                background: canCraft ? THEME.colors.primary : THEME.colors.disabled,
-                color: canCraft ? THEME.colors.text : THEME.colors.textDark,
+                // Black background for both enabled/disabled, opacity handles the difference
+                background: "#000000",
+                color: THEME.colors.text,
                 border: "none",
                 borderRadius: THEME.borderRadius.full,
                 cursor: canCraft ? "pointer" : "default",
-                boxShadow: canCraft ? THEME.shadows.sm : "none",
+                boxShadow: THEME.shadows.sm,
                 zIndex: THEME.zIndex.base + 90,
                 letterSpacing: "0.1em",
                 transition: THEME.transitions.slow,
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                textTransform: "uppercase"
+                textTransform: "uppercase",
+                opacity: canCraft ? 1 : 0.35
               }}
             >
               {/* Flame icon - SVG */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
-                fill={canCraft ? THEME.colors.text : THEME.colors.textDark}
+                fill={THEME.colors.text}
                 style={{ width: 18, height: 18 }}
               >
                 <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C12 6.47 13.5.67 13.5.67zM8 14c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/>
@@ -1033,6 +1041,24 @@ function Stacklands() {
         </div>
       </div>
       <Toasts list={toasts} />
+
+      {/* Style Selector - Bottom Right (above Map Selector) */}
+      {DEBUG_MAP_SELECTOR && (
+        <div style={{ position: "fixed", bottom: THEME.spacing.lg + 80, right: 14, zIndex: THEME.zIndex.mapSelector, background: THEME.colors.dropdownBg, padding: `10px ${THEME.spacing.md}`, borderRadius: THEME.borderRadius.md, border: `2px solid ${THEME.colors.accentBorder}` }}>
+          <div style={{ color: THEME.colors.dropdownText, fontSize: THEME.typography.sizes.xs, fontWeight: THEME.typography.weights.bold, marginBottom: 6, textTransform: "uppercase" }}>🎨 Style</div>
+          <div style={{ display: "flex", gap: THEME.spacing.sm, alignItems: "center" }}>
+            <select
+              value={window.getCurrentStyle ? window.getCurrentStyle() : 'default'}
+              onChange={(e) => window.setStyle(e.target.value)}
+              style={{ background: THEME.colors.surface, color: THEME.colors.dropdownAccent, border: `1px solid ${THEME.colors.accentBorder}`, borderRadius: THEME.borderRadius.sm, padding: "4px 8px", fontSize: THEME.typography.sizes.sm, fontWeight: THEME.typography.weights.semibold, cursor: "pointer" }}
+            >
+              {window.getAvailableStyles ? window.getAvailableStyles().map(styleKey => (
+                <option key={styleKey} value={styleKey}>{styleKey.charAt(0).toUpperCase() + styleKey.slice(1)}</option>
+              )) : <option value="default">Default</option>}
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Map Selector - Bottom Right */}
       {DEBUG_MAP_SELECTOR && (

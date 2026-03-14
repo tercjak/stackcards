@@ -35,15 +35,17 @@ Obrazek (524x515 px) - siatka 4x4:
 ### Obliczenia pozycji slotów (pixel-based)
 
 ```javascript
-// Wymiary górnego kociołka (scaled down 3x)
-const CAULDRON_TOP_W = 524 / 3;  // ~174.67px
-const CAULDRON_TOP_H = 515 / 3;  // ~171.67px
+// Wymiary górnego kociołka - image z 8px padding na outline: 540x566
+// Content area: 524x515 (oryginalny obrazek)
+// Grid offset = padding (8px) + offset wewnątrz contentu
+const CAULDRON_TOP_W = 540 / 3;  // ~180px (full image scaled)
+const CAULDRON_TOP_H = 566 / 3;  // ~188.67px (full image scaled)
 
-// Offset marginesu (1/8 obrazka = 0.5 cells w 4x4 grid)
-const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;  // ~21.83px
-const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;  // ~21.46px
+// Offset = padding + original grid offset (1/8 content width/height)
+const GRID_OFFSET_X = 8/3 + (524 / 4) * 0.5 / 3;  // ~24.50px
+const GRID_OFFSET_Y = 8/3 + (515 / 4) * 0.5 / 3;  // ~24.12px
 
-// Wymiary aktywnej siatki 3x3 (3/4 obrazka)
+// Wymiary aktywnej siatki 3x3 (w content area)
 const GRID_W = (524 / 4) * 3 / 3;  // ~131px
 const GRID_H = (515 / 4) * 3 / 3;  // ~128.75px
 
@@ -126,14 +128,14 @@ const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
 if (cauldronAsset && movedCard) {
   const cx = cauldronAsset.x;
   const cy = cauldronAsset.y;
-  const cw = 524 / 3;
-  const ch = 515 / 3;
+  const cw = 540 / 3;  // full image width scaled
+  const ch = 566 / 3;  // full image height scaled
 
-  // Active crafting grid area (3x3 within 4x4 image grid)
-  const GRID_OFFSET_X = (524 / 4) * 0.5 / 3;
-  const GRID_OFFSET_Y = (515 / 4) * 0.5 / 3;
-  const GRID_W = (524 / 4) * 3 / 3;
-  const GRID_H = (515 / 4) * 3 / 3;
+  // Grid offset = padding (8px) + original content offset
+  const GRID_OFFSET_X = 8/3 + (524 / 4) * 0.5 / 3;
+  const GRID_OFFSET_Y = 8/3 + (515 / 4) * 0.5 / 3;
+  const GRID_W = (524 / 4) * 3 / 3;  // content grid width
+  const GRID_H = (515 / 4) * 3 / 3;  // content grid height
   const SLOT_W = GRID_W / 3;
   const SLOT_H = GRID_H / 3;
 

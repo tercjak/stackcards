@@ -1,0 +1,13 @@
+{
+  "id": "new_map",
+  "name": "New Map",
+  "cards": [
+    {
+      "id": "outer_disciple",
+      "x": 694,
+      "y": 288
+    }
+  ],
+  "assets": [],
+  "special_assets": []
+}

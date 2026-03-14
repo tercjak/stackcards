@@ -2,71 +2,9 @@
 // Design tokens for Stacklands card game
 // Usage: THEME.colors.primary, THEME.spacing.md, etc.
 
+// Base THEME structure (non-color properties)
 const THEME = {
-  colors: {
-    // Surface colors
-    surface: '#1a1a1a',
-    surfaceDark: '#000000',
-    surfaceLight: '#E0E0E0',
-    surfaceVariant: 'rgba(200, 180, 140, 0.06)',
-
-    // Primary colors
-    primary: '#000000',
-    primaryHover: '#333333',
-    disabled: '#E0E0E0',
-
-    // Accent colors
-    accent: '#f0d080',
-    accentBorder: '#c8a86b',
-    accentDim: '#b09060',
-
-    // Text colors
-    text: '#FFFFFF',
-    textDark: '#000000',
-    textMuted: 'rgba(255,255,255,0.38)',
-    textSecondary: 'rgba(255,255,255,0.8)',
-
-    // Type colors (card type indicators)
-    unit: '#4a90d9',
-    resource: '#5aaa60',
-    food: '#9b59b6',
-    material: '#d4801a',
-    building: '#c0392b',
-    currency: '#d4ac0d',
-    weapon: '#7f8c8d',
-    enemy: '#922b21',
-
-    // Card colors
-    cardBg: '#fdf8ee',
-    cardBgDark: '#e8dac8',
-    cardBorder: '#c8a86b',
-    cardBorderEnemy: '#9a7755',
-
-    // UI colors
-    board: '#5a9040',
-    boardHighlight: '#8ab560',
-    boardAccent: '#72b050',
-
-    // Progress bar colors
-    progressBg: '#e0d0b0',
-    progressFill: '#7bc244',
-    progressFillDark: '#4a9010',
-
-    // Slot overlay colors
-    slotHover: 'rgba(58,158,253,0.4)',
-    slotFilled: 'rgba(123,194,68,0.35)',
-    slotRequired: 'rgba(255,215,0,0.2)',
-
-    // Toast colors
-    toastBg: 'rgba(248, 242, 220, 0.98)',
-    toastText: '#3a2808',
-
-    // Dropdown colors
-    dropdownBg: 'rgba(0,0,0,0.8)',
-    dropdownText: '#fff',
-    dropdownAccent: '#f0d080',
-  },
-
+  colors: {}, // Will be populated by style files
   spacing: {
     xs: 4,
     sm: 8,
@@ -75,7 +13,6 @@ const THEME = {
     xl: 32,
     xxl: 48,
   },
-
   borderRadius: {
     sm: 4,
     md: 8,
@@ -83,7 +20,6 @@ const THEME = {
     xl: 16,
     full: 20,
   },
-
   shadows: {
     sm: '0 1px 3px rgba(0,0,0,0.3)',
     md: '0 4px 12px rgba(0,0,0,0.15)',
@@ -94,7 +30,6 @@ const THEME = {
     button: '0 2px 10px #0004',
     dropdown: '0 8px 30px #0008',
   },
-
   typography: {
     fontFamily: "'Nunito', 'Segoe UI', sans-serif",
     sizes: {
@@ -113,13 +48,11 @@ const THEME = {
       extrabold: 800,
     },
   },
-
   // Card dimensions
   card: {
     width: 350 / 2,
     height: 460 / 2,
   },
-
   // Transitions
   transitions: {
     fast: '0.1s ease',
@@ -127,7 +60,6 @@ const THEME = {
     slow: '0.2s ease',
     drag: '0.12s cubic-bezier(0.34,1.56,0.64,1)',
   },
-
   // Z-index layers
   zIndex: {
     base: 10,
@@ -138,6 +70,37 @@ const THEME = {
     mapSelector: 1000,
     toast: 9000,
   },
+};
+
+// Current style key
+let CURRENT_STYLE_KEY = 'default';
+
+// Function to apply a different style/theme
+window.setStyle = function(styleKey) {
+  if (window.STYLES && window.STYLES[styleKey]) {
+    CURRENT_STYLE_KEY = styleKey;
+    const style = window.STYLES[styleKey];
+    // Apply colors to THEME
+    Object.assign(THEME.colors, JSON.parse(JSON.stringify(style.colors)));
+    // Apply non-color properties (like disableCardGradient, thickCardBorder)
+    Object.assign(THEME, {
+      disableCardGradient: style.disableCardGradient || false,
+      thickCardBorder: style.thickCardBorder || false,
+    });
+    // Trigger re-render by dispatching custom event
+    window.dispatchEvent(new CustomEvent('stylechange', { detail: styleKey }));
+    console.log(`Style changed to: ${styleKey}`);
+  }
+};
+
+// Get current style key
+window.getCurrentStyle = function() {
+  return CURRENT_STYLE_KEY;
+};
+
+// Get all available styles
+window.getAvailableStyles = function() {
+  return window.STYLES ? Object.keys(window.STYLES) : ['default'];
 };
 
 // Expose to global scope for use in stacklands.jsx

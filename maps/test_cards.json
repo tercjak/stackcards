@@ -1,0 +1,13 @@
+{
+  "id": "test_cards",
+  "name": "Test Cards",
+  "cards": [
+    {
+      "id": "outer_disciple",
+      "x": 100,
+      "y": 100
+    }
+  ],
+  "assets": [],
+  "special_assets": []
+}

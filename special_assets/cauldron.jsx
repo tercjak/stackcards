@@ -15,16 +15,19 @@ window.CauldronLogic = {
   // All slots are active for crafting - matches recipe CSV columns input00-input22
   slots: [0, 1, 2, 3, 4, 5, 6, 7, 8],
 
-  // Slot geometry - matches crafting.md exactly
+  // Slot geometry - images have 8px padding for outline, content is 524x515 (top) and 420x103 (bottom)
+  // Image dimensions: top=540x566, bottom=540x134 (includes padding and outline)
   geometry: {
-    CAULDRON_TOP_W: 524 / 3,   // ~174.67px
-    CAULDRON_TOP_H: 515 / 3,   // ~171.67px
-    GRID_OFFSET_X: (524 / 4) * 0.5 / 3,  // ~21.83px
-    GRID_OFFSET_Y: (515 / 4) * 0.5 / 3,  // ~21.46px
-    GRID_W: (524 / 4) * 3 / 3,           // ~131px
-    GRID_H: (515 / 4) * 3 / 3,           // ~128.75px
-    SLOT_W: ((524 / 4) * 3 / 3) / 3,     // ~43.67px
-    SLOT_H: ((515 / 4) * 3 / 3) / 3,     // ~42.92px
+    CAULDRON_TOP_W: 540 / 3,   // ~180px (full image width scaled)
+    CAULDRON_TOP_H: 566 / 3,   // ~188.67px (full image height scaled)
+    // Grid offset = padding + original grid offset from content edge
+    // Padding: (540-524)/2 = 8px, scaled: 8/3 = 2.67px
+    GRID_OFFSET_X: 8/3 + (524 / 4) * 0.5 / 3,  // ~24.50px (padding + content offset)
+    GRID_OFFSET_Y: 8/3 + (515 / 4) * 0.5 / 3,  // ~24.12px (padding + content offset)
+    GRID_W: (524 / 4) * 3 / 3,                 // ~131px (content grid width)
+    GRID_H: (515 / 4) * 3 / 3,                 // ~128.75px (content grid height)
+    SLOT_W: ((524 / 4) * 3 / 3) / 3,           // ~43.67px (content slot width)
+    SLOT_H: ((515 / 4) * 3 / 3) / 3,           // ~42.92px (content slot height)
   },
 
   // Get all 9 slot positions for rendering (relative to cauldron container)
@@ -152,8 +155,10 @@ window.CauldronLogic = {
 
   // Handle cauldron drag - returns new positions for both cauldron parts
   getCauldronDragPositions: function(newX, newY) {
-    const bottomOffsetX = (524 - 420) / 2 / 3;
-    const bottomOffsetY = 515 / 3 - 10;
+    // Both parts are 540px wide, so no X offset needed (centered)
+    // Y offset: top height (566/3=188.67) minus overlap (~13px) = 175.67
+    const bottomOffsetX = 0;  // Both parts are 540px wide - perfectly centered
+    const bottomOffsetY = 566 / 3 - 13;  // ~175.67 - bottom attaches below top with small overlap
 
     return {
       top: { x: newX, y: newY },

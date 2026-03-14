@@ -4,7 +4,7 @@
   type: "building"
   description: "A stone circular fighting platform with yin-yang symbol for martial duels."
   llm_prompt: "minimalist 2D game icon, circular stone martial arts platform with carved yin-yang symbol, top-down view, single centered object, flat vector line art, black and white, clean white background, no environment, no buildings, no trees, UI icon"
-  texture: "assets/martial_arena4.png"
+  texture: "assets/martial_arena4b.png"
   tags: ["building", "sect", "combat"]
 
 - id: "alchemy_cauldron"
@@ -21,7 +21,7 @@
   name_pl: "Kocioł Alchemiczny - Góra"
   type: "building"
   description: "Top part of the alchemy cauldron with crafting grid."
-  texture: "assets/crafting_caldron_top.png"
+  texture: "assets/crafting_caldron_top_b.png"
   tags: ["building", "alchemy", "crafting"]
 
 - id: "crafting_cauldron_bottom"
@@ -29,7 +29,7 @@
   name_pl: "Kocioł Alchemiczny - Dół"
   type: "building"
   description: "Bottom part of the alchemy cauldron with legs."
-  texture: "assets/crafting_caldron_bottom.png"
+  texture: "assets/crafting_caldron_bottom_b.png"
   tags: ["building", "alchemy"]
 
 - id: "sifu_master"
@@ -38,7 +38,7 @@
   type: "unit"
   description: "An experienced teacher who guides disciples on the path of immortality."
   llm_prompt: "Minimalist 2D game card icon of an old chinese martial arts master with long white beard, traditional flowing robes, holding a wooden staff, flat vector line art, white background, Stacklands style"
-  texture: "assets/sifu_master.png"
+  texture: "assets/sifu_master_b.png"
   hp: 25
   attack: 8
   tags: ["cultivator", "teacher", "elder"]
@@ -49,6 +49,39 @@
   type: "unit"
   description: "A beginner cultivator from a martial sect."
   llm_prompt: "Minimalist 2D game card icon of a young wuxia martial sect disciple in simple robes, sword on back, flat vector line art, white background, Stacklands style"
-  texture: "assets/outer_disciple.png"
+  texture: "assets/outer_disciple_b.png"
   hp: 12
   tags: ["cultivator", "worker"]
+
+
+- id: "maple_tree_red"
+  name: "Red Spirit Tree"
+  name_pl: "Czerwone Duchowe Drzewo"
+  type: "decoration"
+  llm_prompt: "minimalist 2D game asset, ancient chinese maple tree with vibrant red leaves, twisted dark wood trunk, flat vector line art, clean white background, Stacklands style, high contrast"
+  texture: "assets/maple_red_b.png"
+  tags: ["decoration", "nature", "red"]
+
+- id: "ginkgo_tree_yellow"
+  name: "Golden Ginkgo Tree"
+  name_pl: "Złote Drzewo Ginkgo"
+  type: "decoration"
+  llm_prompt: "minimalist 2D game asset, oriental ginkgo tree with bright yellow fan-shaped leaves, elegant thin trunk, flat vector line art, clean white background, Stacklands style, saturated colors"
+  texture: "assets/ginkgo_yellow_b.png"
+  tags: ["decoration", "nature", "yellow"]
+
+- id: "misty_mountains"
+  name: "Misty Peaks"
+  name_pl: "Zamglone Szczyty"
+  type: "decoration"
+  llm_prompt: "minimalist 2D game background asset, stylized chinese jagged mountains, sharp peaks, flat vector line art, shades of grey and blue, clean white background, Stacklands style, simplified shapes"
+  texture: "assets/mountains.png"
+  tags: ["decoration", "landscape", "background"]
+
+- id: "spirit_rock"
+  name: "Meditation Rock"
+  name_pl: "Skała Medytacji"
+  type: "decoration"
+  llm_prompt: "minimalist 2D game asset, smooth weathered river stone with glowing cyan ancient runes, flat vector line art, white background, Stacklands style"
+  texture: "assets/spirit_rock.png"
+  tags: ["decoration", "magic"]
