@@ -30,6 +30,8 @@ function MapEditor() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [mapName, setMapName] = useState('new_map');
   const [draggedItem, setDraggedItem] = useState(null);
+  const [availableMaps, setAvailableMaps] = useState([]);
+  const [selectedMapId, setSelectedMapId] = useState(null);
 
   // For repositioning already placed items - use ref like in stacklands.jsx
   const dragRef = useRef(null);
@@ -74,6 +76,17 @@ function MapEditor() {
   useEffect(() => {
     async function loadData() {
       try {
+        // Fetch available maps first
+        try {
+          const mapsIndexRes = await fetch('maps/index.json');
+          if (mapsIndexRes.ok) {
+            const mapsIndex = await mapsIndexRes.json();
+            setAvailableMaps(mapsIndex.maps || []);
+          }
+        } catch (e) {
+          console.log("No maps/index.json found");
+        }
+
         const [cardsRes, assetsRes] = await Promise.all([
           fetch('cards.yaml'),
           fetch('assets.yaml')
@@ -97,7 +110,7 @@ function MapEditor() {
 
         console.log('Loaded cards:', Object.keys(CARD_DEFS).length);
         console.log('Loaded assets:', Object.keys(ASSET_DEFS).length);
-        console.log('Asset IDs:', Object.keys(ASSET_DEFS));
+        console.log('Available maps:', availableMaps);
       } catch (err) {
         console.error('Error loading definitions:', err);
       }
@@ -206,16 +219,19 @@ function MapEditor() {
 
   // Save map - sends to server via POST /api/maps/save
   const handleSave = async () => {
+    const saveName = mapName || 'unnamed_map';
+
     const mapData = {
-      id: mapName,
-      name: mapName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      id: saveName,
+      name: saveName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
       cards: [],
       assets: [],
       special_assets: []
     };
 
     placedItems.forEach(item => {
-      if (item.type === 'card') {
+      console.log('Save item:', item.id, 'isCard:', item.isCard);
+      if (item.isCard) {
         mapData.cards.push({ id: item.id, x: item.x, y: item.y });
       } else if (item.isSpecial) {
         mapData.special_assets.push({
@@ -227,18 +243,18 @@ function MapEditor() {
           logic: item.logic || 'crafting'
         });
       } else {
-        mapData.assets.push({ id: item.id, x: item.x, y: item.y, scale: item.scale || 3 });
+        mapData.assets.push({ id: item.id, x: item.x, y: item.y, scale: item.scale || 1 });
       }
     });
+    console.log('Saving mapData:', mapData);
 
     try {
-      const response = await fetch(`/api/maps/save?name=${mapName}`, {
+      const response = await fetch(`/api/maps/save?name=${saveName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mapData)
       });
 
-      // Check if response is OK before parsing JSON
       if (!response.ok) {
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
@@ -246,7 +262,14 @@ function MapEditor() {
       const result = await response.json();
 
       if (result.success) {
-        alert(`Map "${mapName}" saved successfully to ${result.file}!`);
+        // Refresh available maps list
+        const mapsIndexRes = await fetch('maps/index.json');
+        if (mapsIndexRes.ok) {
+          const mapsIndex = await mapsIndexRes.json();
+          setAvailableMaps(mapsIndex.maps || []);
+          setSelectedMapId(saveName);
+        }
+        alert(`Map "${saveName}" saved successfully!`);
       } else {
         throw new Error(result.error || 'Server returned error');
       }
@@ -257,10 +280,170 @@ function MapEditor() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `maps/${mapName}.json`;
+      a.download = `maps/${saveName}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      alert(`Server save failed: ${err.message}. Downloaded map as JSON file.`);
+      alert(`Server save failed. Downloaded map as JSON.`);
+    }
+  };
+
+  // Load map from server
+  const loadMap = async (mapId) => {
+    if (!mapId) return;
+
+    // Check if current map has unsaved changes
+    const hasChanges = placedItems.length > 0;
+    let loadTarget = mapId; // Track which map to actually load
+
+    if (hasChanges) {
+      const userChoice = confirm(`Current map has unsaved changes.\n\nDo you want to save before loading?\n\nCancel = Load without saving`);
+      if (userChoice) {
+        // User clicked YES - prompt for filename
+        const saveName = prompt('Enter map filename:', mapName || 'unnamed_map');
+        if (saveName) {
+          setMapName(saveName);
+          loadTarget = saveName; // Load the saved map, not the selected one
+          // Create map data and save
+          const mapData = {
+            id: saveName,
+            name: saveName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            cards: [],
+            assets: [],
+            special_assets: []
+          };
+
+          placedItems.forEach(item => {
+            if (item.isCard) {
+              mapData.cards.push({ id: item.id, x: item.x, y: item.y });
+            } else if (item.isSpecial) {
+              mapData.special_assets.push({
+                id: item.id,
+                x: item.x,
+                y: item.y,
+                scale: item.scale || 1,
+                file: item.file || 'special_assets/cauldron.jsx',
+                logic: item.logic || 'crafting'
+              });
+            } else {
+              mapData.assets.push({ id: item.id, x: item.x, y: item.y, scale: item.scale || 3 });
+            }
+          });
+
+          try {
+            const response = await fetch(`/api/maps/save?name=${saveName}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(mapData)
+            });
+
+            if (!response.ok) {
+              throw new Error(`Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+              const mapsIndexRes = await fetch('maps/index.json');
+              if (mapsIndexRes.ok) {
+                const mapsIndex = await mapsIndexRes.json();
+                setAvailableMaps(mapsIndex.maps || []);
+              }
+            }
+          } catch (err) {
+            console.error('Save error:', err);
+            alert(`Save failed: ${err.message}`);
+            return; // Abort loading if save failed
+          }
+        }
+      }
+      // If NO/CANCEL, continue without saving - FALL THROUGH to load the map
+    }
+
+    // Actually load the target map
+    try {
+      // Cache-busting to force fresh fetch
+      const response = await fetch(`maps/${loadTarget}.json?t=${Date.now()}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load map: ${response.status}`);
+      }
+
+      const mapData = await response.json();
+
+      // Convert map data to placed items
+      const items = [];
+      let uidCounter = Date.now();
+
+      // Load cards
+      if (mapData.cards) {
+        mapData.cards.forEach(card => {
+          const def = CARD_DEFS[card.id];
+          if (def) {
+            items.push({
+              uid: uidCounter++,
+              id: card.id,
+              name: def.name || card.id,
+              type: def.type,
+              isCard: true,
+              x: card.x,
+              y: card.y
+            });
+          }
+        });
+      }
+
+      // Load assets
+      if (mapData.assets) {
+        mapData.assets.forEach(asset => {
+          const def = ASSET_DEFS[asset.id];
+          if (def) {
+            items.push({
+              uid: uidCounter++,
+              id: asset.id,
+              name: def.name || asset.id,
+              type: def.type,
+              isAsset: true,
+              isSpecial: false,
+              scale: asset.scale || 1,
+              x: asset.x,
+              y: asset.y
+            });
+          }
+        });
+      }
+
+      // Load special assets
+      if (mapData.special_assets) {
+        mapData.special_assets.forEach(sa => {
+          const def = ASSET_DEFS[sa.id];
+          if (def) {
+            items.push({
+              uid: uidCounter++,
+              id: sa.id,
+              name: def.name || sa.id,
+              type: def.type,
+              isAsset: true,
+              isSpecial: true,
+              scale: sa.scale || 1,
+              file: sa.file || 'special_assets/cauldron.jsx',
+              logic: sa.logic || 'crafting',
+              x: sa.x,
+              y: sa.y
+            });
+          }
+        });
+      }
+
+      // Force React to re-render by clearing first (needed when reloading same map)
+      setPlacedItems([]);
+      setSelectedItem(null);
+      // Small delay to ensure React processes the clear
+      setTimeout(() => {
+        setPlacedItems(items);
+        setSelectedMapId(loadTarget);
+        setMapName(loadTarget);
+      }, 10);
+    } catch (err) {
+      console.error('Load error:', err);
+      alert(`Failed to load map: ${err.message}`);
     }
   };
 
@@ -333,13 +516,33 @@ function MapEditor() {
       <div className="sidebar">
         <div className="sidebar-header">
           <div className="sidebar-title">🗺️ Map Editor</div>
-          <input
-            type="text"
-            className="property-input"
-            value={mapName}
-            onChange={(e) => setMapName(e.target.value)}
-            placeholder="Map name..."
-          />
+
+          {/* Map Loader */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: '#a09070', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase' }}>📂 Load Map</div>
+            <select
+              value={selectedMapId || ''}
+              onChange={(e) => loadMap(e.target.value)}
+              style={{ width: '100%', background: 'rgba(50,50,70,0.5)', color: '#e0d0a0', border: '1px solid rgba(200,168,107,0.3)', borderRadius: 4, padding: '6px 8px', fontSize: 11, fontWeight: 600 }}
+            >
+              <option value="">-- Select Map --</option>
+              {availableMaps.map(mapId => (
+                <option key={mapId} value={mapId}>{mapId.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Save Map Name Input */}
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: '#a09070', fontWeight: 700, marginBottom: 4, textTransform: 'uppercase' }}>💾 Map Filename</div>
+            <input
+              type="text"
+              className="property-input"
+              value={mapName}
+              onChange={(e) => setMapName(e.target.value)}
+              placeholder="Enter map filename..."
+            />
+          </div>
         </div>
 
         <div className="palette-tabs">

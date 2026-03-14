@@ -843,7 +843,7 @@ function Stacklands() {
     if (map.assets || map.special_assets) {
       const newAssets = [];
       if (map.assets) {
-        newAssets.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 3)));
+        newAssets.push(...map.assets.map(a => mkAsset(a.id, a.x, a.y, a.scale || 1)));
       }
       if (map.special_assets) {
         newAssets.push(...map.special_assets.map(sa =>

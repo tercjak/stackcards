@@ -1,56 +1,14 @@
 {
-  "id": "crafting",
-  "name": "Crafting",
-  "cards": [],
+  "id": "maps_crafting",
+  "name": "Maps Crafting",
+  "cards": [
+    {
+      "id": "spirit_herb",
+      "x": 383,
+      "y": 417
+    }
+  ],
   "assets": [
-    {
-      "id": "sifu_master",
-      "x": 1216,
-      "y": 432,
-      "scale": 1
-    },
-    {
-      "id": "outer_disciple",
-      "x": 566,
-      "y": 441,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 445,
-      "y": 761,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 444,
-      "y": 795,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 443,
-      "y": 842,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 204,
-      "y": 755,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 203,
-      "y": 797,
-      "scale": 3
-    },
-    {
-      "id": "qi_stone",
-      "x": 202,
-      "y": 838,
-      "scale": 3
-    },
     {
       "id": "martial_arena",
       "x": 666,
@@ -58,28 +16,16 @@
       "scale": 4
     },
     {
-      "id": "cultivation_manual",
-      "x": 731,
-      "y": 758,
-      "scale": 3
+      "id": "sifu_master",
+      "x": 1222,
+      "y": 661,
+      "scale": 1
     },
     {
-      "id": "cultivation_manual",
-      "x": 733,
-      "y": 808,
-      "scale": 3
-    },
-    {
-      "id": "spirit_herb",
-      "x": 988,
-      "y": 759,
-      "scale": 3
-    },
-    {
-      "id": "spirit_herb",
-      "x": 990,
-      "y": 811,
-      "scale": 3
+      "id": "outer_disciple",
+      "x": 649,
+      "y": 653,
+      "scale": 1
     }
   ],
   "special_assets": [

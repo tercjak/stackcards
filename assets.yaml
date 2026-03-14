@@ -43,4 +43,12 @@
   attack: 8
   tags: ["cultivator", "teacher", "elder"]
 
-
+- id: "outer_disciple"
+  name: "Outer Disciple"
+  name_pl: "Zewnętrzny Uczeń"
+  type: "unit"
+  description: "A beginner cultivator from a martial sect."
+  llm_prompt: "Minimalist 2D game card icon of a young wuxia martial sect disciple in simple robes, sword on back, flat vector line art, white background, Stacklands style"
+  texture: "assets/outer_disciple.png"
+  hp: 12
+  tags: ["cultivator", "worker"]
