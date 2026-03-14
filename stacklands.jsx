@@ -36,18 +36,19 @@ const expandSpecialAssets = (specialAssets) => {
   const result = [];
   for (const sa of specialAssets) {
     if (sa.id === 'alchemy_cauldron') {
-      // Expand into two parts - bottom has offset relative to top
+      // Expand into two parts - bottom attaches to top with offset (matching map_editor.jsx)
+      // Offset: x=17.33, y=161.67 (relative to top position)
       result.push({
         ...sa,
         id: 'crafting_cauldron_top',
         x: sa.x,
-        y: sa.y + 200,
+        y: sa.y,
       });
       result.push({
         ...sa,
         id: 'crafting_cauldron_bottom',
         x: sa.x + 17.33,
-        y: sa.y + 361.67 - 200,
+        y: sa.y + 161.67,
       });
     } else {
       result.push(sa);
