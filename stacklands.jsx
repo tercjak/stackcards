@@ -934,7 +934,7 @@ function Stacklands() {
               style={{
                 position: "absolute",
                 left: assets.find(a => a.id === "crafting_cauldron_top").x + (CARD_W * 1) / 2 - 50,
-                top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 + 10,
+                top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 - 10,
                 height: 40,
                 padding: "0 20px",
                 fontSize: 14,
@@ -972,7 +972,7 @@ function Stacklands() {
             Drag cards onto cauldron to craft • Kup pakiety u góry
           </div>
 
-          {/* Recipe dropdown over cauldron */}
+          {/* Recipe dropdown over cauldron - centered, matches Map Selector style */}
           {!draggingCauldron && selectedRecipe && (
             <div
               onClick={(e) => { e.stopPropagation(); setSelectedRecipe(null); toast("Recipe view closed"); }}
@@ -984,46 +984,54 @@ function Stacklands() {
               }}
             />
           )}
-          {!draggingCauldron && (
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-            position: "absolute",
-            left: assets.find(a => a.id === "crafting_cauldron_top")?.x + 10,
-            top: assets.find(a => a.id === "crafting_cauldron_top")?.y - 50,
-            zIndex: 200,
-            background: "rgba(248,242,220,0.95)",
-            border: "2px solid #c8a86b",
-            borderRadius: 6,
-            padding: "4px 8px",
-            display: "flex",
-            alignItems: "center",
-            gap: 6
-          }}>
-            <span style={{ fontSize: 9, fontWeight: 700, color: "#7a5820" }}>RECIPE:</span>
-            <select
-              value={selectedRecipe || ""}
-              onChange={(e) => setSelectedRecipe(e.target.value || null)}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                padding: "3px 6px",
-                fontSize: 10,
-                fontFamily: "'Nunito', sans-serif",
-                fontWeight: 600,
-                background: "#fff",
-                border: "1px solid #c8a86b",
-                borderRadius: 4,
-                color: "#3a2808",
-                cursor: "pointer"
-              }}
-            >
-              <option value="">-- Any Recipe --</option>
-              {CRAFTING_RECIPES.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
-          </div>
-          )}
+          {!draggingCauldron && (() => {
+            const cauldronAsset = assets.find(a => a.id === "crafting_cauldron_top");
+            if (!cauldronAsset) return null;
+            const cauldronCenterX = cauldronAsset.x + (524 / 3) / 2;
+            const selectorWidth = 200;
+            const selectorLeft = cauldronCenterX - selectorWidth / 2;
+            return (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  position: "absolute",
+                  left: selectorLeft,
+                  top: cauldronAsset.y - 65,
+                  zIndex: 200,
+                  background: "rgba(0,0,0,0.8)",
+                  padding: "10px 15px",
+                  borderRadius: 8,
+                  border: "2px solid #c8a86b",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  justifyContent: "center"
+                }}
+              >
+                <span style={{ color: "#fff", fontSize: 11, fontWeight: 700, textTransform: "uppercase" }}>Recipe:</span>
+                <select
+                  value={selectedRecipe || ""}
+                  onChange={(e) => setSelectedRecipe(e.target.value || null)}
+                  onClick={(e) => e.stopPropagation()}
+                  style={{
+                    background: "#1a1a1a",
+                    color: "#f0d080",
+                    border: "1px solid #c8a86b",
+                    borderRadius: 4,
+                    padding: "4px 8px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer"
+                  }}
+                >
+                  <option value="">-- Any Recipe --</option>
+                  {CRAFTING_RECIPES.map(r => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
         </div>
       </div>
       <Toasts list={toasts} />
