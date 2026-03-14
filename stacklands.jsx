@@ -933,28 +933,38 @@ function Stacklands() {
               disabled={!canCraft}
               style={{
                 position: "absolute",
-                left: assets.find(a => a.id === "crafting_cauldron_top").x + (CARD_W * 1) / 2 - 40,
+                left: assets.find(a => a.id === "crafting_cauldron_top").x + (CARD_W * 1) / 2 - 50,
                 top: assets.find(a => a.id === "crafting_cauldron_top").y + CARD_H * 1 + 10,
-                width: 80,
-                height: 36,
-                padding: "8px 16px",
-                fontSize: 12,
-                fontWeight: 600,
-                // MD3 Filled Button: enabled = primary (#006C4C green), disabled = on-surface opacity 38%
-                background: canCraft ? "#006C4C" : "rgba(0,0,0,0.38)",
-                color: "#fff",
+                height: 40,
+                padding: "0 20px",
+                fontSize: 14,
+                fontWeight: 500,
+                // MD3 Filled Button: enabled = black, disabled = surface variant
+                background: canCraft ? "#000000" : "#E0E0E0",
+                color: canCraft ? "#FFFFFF" : "#000000",
                 border: "none",
                 borderRadius: 20,
                 cursor: canCraft ? "pointer" : "default",
                 boxShadow: canCraft ? "0 1px 3px rgba(0,0,0,0.3)" : "none",
                 zIndex: 100,
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
+                letterSpacing: "0.1em",
                 transition: "all 0.2s ease",
-                opacity: canCraft ? 1 : 0.5
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                textTransform: "uppercase"
               }}
             >
-              🔥 Craft
+              {/* Flame icon - SVG */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill={canCraft ? "#FFFFFF" : "#000000"}
+                style={{ width: 18, height: 18 }}
+              >
+                <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C12 6.47 13.5.67 13.5.67zM8 14c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2z"/>
+              </svg>
+              CRAFT
             </button>
           )}
 
