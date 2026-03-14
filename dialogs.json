@@ -1,25 +1,48 @@
 [
   {
-    "quest_id": "the_beginnings_are_hard",
-    "text_ids": [
-      "dialog_spirit_pill_1",
-      "dialog_spirit_pill_2",
-      "dialog_spirit_pill_fail_1",
-      "dialog_spirit_pill_fail_1_master",
-      "dialog_spirit_pill_fail_2",
-      "dialog_spirit_pill_fail_2_master",
-      "dialog_spirit_pill_success",
-      "dialog_spirit_pill_success_master"
+    "quest_id": "the_beginnings_are_hard_1",
+    "title": "The Beginnings Are Hard (1/2)",
+    "dialogs": [
+      {
+        "index": 0,
+        "text_id": "dialog_spirit_pill_1",
+        "asset_id": "sifu_master"
+      },
+      {
+        "index": 1,
+        "text_id": "dialog_spirit_pill_2",
+        "asset_id": "outer_disciple"
+      }
     ],
-    "asset_ids": [
-      "sifu_master",
-      "outer_disciple",
-      "outer_disciple",
-      "sifu_master",
-      "outer_disciple",
-      "sifu_master",
-      "outer_disciple",
-      "sifu_master"
-    ]
+    "next_quest": "the_beginnings_are_hard_2",
+    "next_quest_trigger": "craft_fail_count_2"
+  },
+  {
+    "quest_id": "the_beginnings_are_hard_2",
+    "title": "The Beginnings Are Hard (2/2)",
+    "dialogs": [
+      {
+        "index": 0,
+        "text_id": "dialog_spirit_pill_fail_2",
+        "asset_id": "outer_disciple"
+      },
+      {
+        "index": 1,
+        "text_id": "dialog_spirit_pill_fail_2_master",
+        "asset_id": "sifu_master",
+        "on_show": "give_perfect_pill"
+      },
+      {
+        "index": 2,
+        "text_id": "dialog_spirit_pill_success",
+        "asset_id": "outer_disciple"
+      },
+      {
+        "index": 3,
+        "text_id": "dialog_spirit_pill_success_master",
+        "asset_id": "sifu_master"
+      }
+    ],
+    "trigger": "craft_fail_count_2"
   }
 ]

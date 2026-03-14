@@ -90,8 +90,8 @@
 
 # ---Crafting (Pill Variants) ---
   - id: "spirit_pill_p"
-    name: "Perfect Spirit Pill"
-    name_pl: "Doskonała Pigułka Qi"
+    name: "Perfect Pill"
+    name_pl: "Doskonała Pigułka"
     type: "consumable"
     llm_prompt: "Minimalist 2D game card icon of a brilliant golden alchemy pill, intense light aura, flat vector line art, white background, Stacklands style"
     texture: "assets/spirit_pill_p.png"

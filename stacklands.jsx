@@ -363,83 +363,97 @@ function DialogBox({ text, speakerId, targetX, targetY, onClick, speakerDef }) {
   );
 }
 
-// ─── DIALOG MANAGER (obsługuje sekwencję dialogów z questu) ──────────────────
-function DialogManager({ activeQuestId, onComplete, assets, cards }) {
-  const [dialogIndex, setDialogIndex] = useState(0);
-  const [visible, setVisible] = useState(false);
+// ─── DIALOG MANAGER (obsługuje dialogi z questów - prosta sekwencja) ─────────
+function DialogManager({ activeQuestId, onComplete, assets, cards, onDialogComplete, onGivePerfectPill, onActivateQuest }) {
+  const [currentDialogIndex, setCurrentDialogIndex] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [lastQuestId, setLastQuestId] = useState(null);
 
-  // Find dialog config for active quest
   const questDialog = DIALOGS?.find(d => d.quest_id === activeQuestId);
 
-  console.log('DialogManager: activeQuestId=', activeQuestId);
-  console.log('DialogManager: DIALOGS=', DIALOGS);
-  console.log('DialogManager: questDialog=', questDialog);
-  console.log('DialogManager: STRINGS=', STRINGS);
+  console.log('[DialogManager] activeQuestId=', activeQuestId);
+  console.log('[DialogManager] questDialog=', questDialog);
+  console.log('[DialogManager] DIALOGS=', DIALOGS);
+  console.log('[DialogManager] started=', started, 'lastQuestId=', lastQuestId);
 
-  // Auto-show first dialog when quest activates
+  // Auto-start dialog sequence when quest activates (or resets for new quest)
   useEffect(() => {
-    if (activeQuestId && questDialog) {
-      setDialogIndex(0);
-      setVisible(true);
-    } else {
-      setVisible(false);
+    if (questDialog && activeQuestId !== lastQuestId) {
+      // New quest - reset and start
+      console.log('[DialogManager] New quest detected, starting dialog sequence:', activeQuestId);
+      setStarted(true);
+      setCurrentDialogIndex(0);
+      setLastQuestId(activeQuestId);
     }
-  }, [activeQuestId]);
+  }, [activeQuestId, questDialog, lastQuestId]);
 
-  if (!questDialog || !visible) return null;
+  if (!questDialog || !started) {
+    console.log('[DialogManager] Not rendering - questDialog:', !!questDialog, 'started:', started);
+    return null;
+  }
 
-  const currentTextId = questDialog.text_ids[dialogIndex];
-  const currentAssetId = questDialog.asset_ids[dialogIndex];
+  const dialogConfig = questDialog.dialogs.find(d => d.index === currentDialogIndex);
+  if (!dialogConfig) {
+    console.log('[DialogManager] No dialogConfig for index:', currentDialogIndex);
+    return null;
+  }
 
-  const text = STRINGS[currentTextId] || currentTextId;
-  const speakerDef = CARD_DEFS[currentAssetId];
+  const text = STRINGS[dialogConfig.text_id] || dialogConfig.text_id;
+  const speakerDef = CARD_DEFS[dialogConfig.asset_id];
 
-  const handleClick = () => {
-    const nextIndex = dialogIndex + 1;
-    if (nextIndex < questDialog.text_ids.length) {
-      setDialogIndex(nextIndex);
-    } else {
-      setVisible(false);
-      onComplete?.(activeQuestId);
-    }
-  };
+  console.log('[DialogManager] Rendering dialog:', dialogConfig.text_id, 'text:', text);
 
-  // Find target asset/card position for rendering
+  // Execute on_show actions
+  if (dialogConfig.on_show === 'give_perfect_pill' && !perfectPillGivenRef.current) {
+    onGivePerfectPill?.();
+    perfectPillGivenRef.current = true;
+  }
+
+  // Find target position
   let targetX = 400, targetY = 300;
-
-  // Check if target is an asset
-  const targetAsset = assets?.find(a => a.id === currentAssetId);
+  const targetAsset = assets?.find(a => a.id === dialogConfig.asset_id);
   if (targetAsset) {
-    // Asset width depends on scale (scale 1 = CARD_W, scale 3 = CARD_W * 3)
     const assetWidth = CARD_W * (targetAsset.scale || 1);
     targetX = targetAsset.x + assetWidth / 2;
     targetY = targetAsset.y;
-    console.log(`Dialog targeting asset: ${currentAssetId} at (${targetAsset.x}, ${targetAsset.y}), center X: ${targetX}`);
   } else {
-    // Check if target is a card on board
-    const targetCard = cards?.find(c => c.id === currentAssetId);
+    const targetCard = cards?.find(c => c.id === dialogConfig.asset_id);
     if (targetCard) {
       targetX = targetCard.x + CARD_W / 2;
       targetY = targetCard.y;
-      console.log(`Dialog targeting card: ${currentAssetId} at (${targetCard.x}, ${targetCard.y})`);
-    } else {
-      console.log(`Dialog: target ${currentAssetId} NOT FOUND. Available assets:`, assets?.map(a => a.id));
     }
   }
+
+  const handleClick = () => {
+    const nextDialog = questDialog.dialogs.find(d => d.index === currentDialogIndex + 1);
+    if (nextDialog) {
+      setCurrentDialogIndex(nextDialog.index);
+    } else {
+      // Quest complete
+      if (questDialog.next_quest) {
+        // Will be activated by trigger (craft_fail_count)
+        setCurrentDialogIndex(null);
+        onDialogComplete?.(activeQuestId);
+      } else {
+        setCurrentDialogIndex(null);
+        onDialogComplete?.(activeQuestId);
+      }
+    }
+  };
 
   return (
     <DialogBox
       text={text}
-      speakerId={currentAssetId}
       speakerDef={speakerDef}
       targetX={targetX}
       targetY={targetY}
       onClick={handleClick}
-      strings={STRINGS}
-      onClose={() => setVisible(false)}
     />
   );
 }
+
+// Ref for tracking perfect pill (outside component to persist across renders)
+let perfectPillGivenRef = { current: false };
 
 function Toasts({ list }) {
   return (
@@ -521,11 +535,31 @@ function Stacklands() {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loadedSpecialAssetFiles, setLoadedSpecialAssetFiles] = useState([]);
 
-  // Active quest state - tutorial quest starts active
-  const [activeQuestId, setActiveQuestId] = useState('the_beginnings_are_hard');
+  // Active quest state - tutorial quest 1 starts active
+  const [activeQuestId, setActiveQuestId] = useState('the_beginnings_are_hard_1');
 
   // XP system - track craft attempts per recipe
   const [craftAttempts, setCraftAttempts] = useState({});
+
+  // Track craft failures for tutorial quest triggers
+  const [craftFailCount, setCraftFailCount] = useState(0);
+
+  // Handler for activating quest 2 after quest 1 completes
+  const handleActivateQuest = (questId) => {
+    console.log('Activating quest:', questId);
+    setActiveQuestId(questId);
+    // Reset perfect pill ref for new quest
+    perfectPillGivenRef.current = false;
+  };
+
+  // Auto-activate quest 2 after 2 craft failures
+  useEffect(() => {
+    console.log('[QUEST TRIGGER] activeQuestId:', activeQuestId, 'craftFailCount:', craftFailCount);
+    if (activeQuestId === 'the_beginnings_are_hard_1' && craftFailCount >= 2) {
+      console.log('[QUEST TRIGGER] ACTIVATING quest 2!');
+      handleActivateQuest('the_beginnings_are_hard_2');
+    }
+  }, [craftFailCount, activeQuestId]);
 
   // Load special asset scripts dynamically from map data
   useEffect(() => {
@@ -1042,6 +1076,8 @@ function Stacklands() {
     const recipeId = result.recipeId;
     const attempts = (craftAttempts[recipeId] || 0) + 1;
 
+    console.log('[CRAFT] recipeId:', recipeId, 'attempts:', attempts, 'activeQuestId:', activeQuestId, 'craftFailCount:', craftFailCount);
+
     // Update attempt counter
     setCraftAttempts(prev => ({
       ...prev,
@@ -1051,25 +1087,54 @@ function Stacklands() {
     // Find the recipe to get quality-based outputs
     const recipe = CRAFTING_RECIPES.find(r => r.id === recipeId);
 
-    // Determine output based on attempt count (XP)
-    // 1st attempt: output_bad (failure/poor quality)
-    // 2nd attempt: output_avg1 (average quality)
-    // 3rd+ attempt: output_perfect1 (perfect quality)
+    console.log('[CRAFT] recipe:', recipe);
+
+    // Determine output based on attempt count (XP system with probability)
+    // 1st-2nd attempt: FAIL (output_bad - burnt pill)
+    // 3rd+ attempt: SUCCESS (output_great1 - spirit_pill, z szansą na perfect)
     let finalOutput = result.output; // Default fallback
 
     if (recipe) {
-      if (attempts === 1) {
-        // First attempt - bad quality
-        finalOutput = recipe.output_bad || recipe.output_avg2 || result.output;
-        toast(`⚠ First attempt... ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
-      } else if (attempts === 2) {
-        // Second attempt - average/great quality
-        finalOutput = recipe.output_great1 || recipe.output_avg1 || result.output;
-        toast(`✨ Better! ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
+      // Check if this is a pill recipe
+      const isPillRecipe = recipe.output_perfect1 === 'spirit_pill_p' ||
+                          recipe.output_great1 === 'spirit_pill';
+
+      if (isPillRecipe) {
+        if (attempts <= 2) {
+          // First 2 attempts: FAIL - burnt pill
+          finalOutput = recipe.output_bad || 'spirit_pill_b';
+          toast(`❌ Burnt Pill... (attempt #${attempts})`);
+          // Track fail for tutorial trigger
+          setCraftFailCount(prev => prev + 1);
+        } else {
+          // 3rd+ attempt: SUCCESS - normal pill with chance for perfect
+          if (attempts >= 4) {
+            let perfectChance = 0;
+            if (attempts >= 12) {
+              perfectChance = 1;      // 100% at 12+ attempts
+            } else {
+              // Linear interpolation: 50% at 4, 75% at 8
+              perfectChance = 0.5 + (attempts - 4) * (0.75 - 0.5) / (8 - 4);
+              if (perfectChance > 1) perfectChance = 1;
+            }
+
+            const roll = Math.random();
+            if (roll < perfectChance) {
+              finalOutput = recipe.output_perfect1; // Perfect pill
+              toast(`🌟 PERFECT Pill! (${(perfectChance * 100).toFixed(0)}% chance)`);
+            } else {
+              finalOutput = recipe.output_great1; // Normal pill
+              toast(`✅ Spirit Pill crafted!`);
+            }
+          } else {
+            // 3rd attempt: guaranteed normal pill
+            finalOutput = recipe.output_great1 || 'spirit_pill';
+            toast(`✅ Spirit Pill crafted!`);
+          }
+        }
       } else {
-        // Third+ attempt - perfect quality
-        finalOutput = recipe.output_perfect1 || result.output;
-        toast(`🌟 Perfect! ${CARD_DEFS[finalOutput]?.name || finalOutput}`);
+        // Other recipes - use fallback
+        finalOutput = recipe.output_perfect1 || recipe.output_great1 || result.output;
       }
     }
 
@@ -1082,8 +1147,6 @@ function Stacklands() {
 
     // Clear slots
     setCauldronSlots(Array(9).fill(null));
-
-    toast(`✨ Crafted: ${CARD_DEFS[finalOutput]?.name || finalOutput}! (Attempt #${attempts})`);
   };
 
   // Check if cauldron slots match ANY recipe - using CauldronLogic
@@ -1262,7 +1325,22 @@ function Stacklands() {
         activeQuestId={activeQuestId}
         onComplete={(questId) => {
           console.log('Quest completed:', questId);
-          setActiveQuestId(null);
+          // Don't clear activeQuestId here - quest 2 will be activated by trigger
+        }}
+        onDialogComplete={(questId) => {
+          console.log('Dialog sequence completed:', questId);
+          if (questId === 'the_beginnings_are_hard_2') {
+            setActiveQuestId(null); // All quests done
+          }
+        }}
+        onActivateQuest={handleActivateQuest}
+        onGivePerfectPill={() => {
+          // Add perfect spirit pill to board near sifu
+          const sifu = assets.find(a => a.id === 'sifu_master');
+          const x = sifu ? sifu.x - 100 : 1100;
+          const y = sifu ? sifu.y - 50 : 600;
+          setCards(prev => [...prev, mkCard('spirit_pill_p', x, y)]);
+          toast('🌟 Received: Perfect Spirit Pill!');
         }}
         assets={assets}
         cards={cards}
